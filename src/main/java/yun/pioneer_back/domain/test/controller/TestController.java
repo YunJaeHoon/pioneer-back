@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import yun.pioneer_back.common.exception.CustomException;
+import yun.pioneer_back.common.exception.CustomExceptionCode;
 import yun.pioneer_back.common.response.ExceptionResponseDto;
 import yun.pioneer_back.common.response.SuccessResponseDto;
 
@@ -27,11 +29,6 @@ public class TestController
     @GetMapping("/error")
     public ResponseEntity<ExceptionResponseDto> testError()
     {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ExceptionResponseDto.builder()
-                        .code("NOT_FOUND")
-                        .message("API 에러 응답입니다.")
-                        .data(null)
-                        .build());
+        throw new CustomException(CustomExceptionCode.EXAMPLE_ERROR_CODE, null);
     }
 }
