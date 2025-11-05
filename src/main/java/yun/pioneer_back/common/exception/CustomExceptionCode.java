@@ -19,6 +19,9 @@ public enum CustomExceptionCode
     // 이메일
     SEND_EMAIL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "이메일 전송 중 에러가 발생하였습니다."),
 
+    // Redis
+    REDIS_OPERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 작업 수행 중 에러가 발생하였습니다."),
+
     // 기타
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부에서 예기치 못한 오류가 발생했습니다.");
 
