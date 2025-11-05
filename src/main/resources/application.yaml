@@ -13,6 +13,12 @@ spring:
     hibernate:
       ddl-auto: update
 
+  ## Redis
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
   ## 이메일
   mail:
     host: smtp.gmail.com
