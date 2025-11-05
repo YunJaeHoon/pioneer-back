@@ -2,6 +2,7 @@ package yun.pioneer_back.domain.test;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,6 +17,7 @@ public class TestController
 {
     // API 성공 응답 테스트
     @GetMapping("/success")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<SuccessResponseDto> testSuccess()
     {
         return ResponseEntity.status(HttpStatus.OK)
@@ -27,6 +29,7 @@ public class TestController
 
     // API 에러 응답 테스트
     @GetMapping("/error")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ExceptionResponseDto> testError()
     {
         throw new CustomException(CustomExceptionCode.EXAMPLE_ERROR_CODE, null);
