@@ -1,4 +1,4 @@
-package yun.pioneer_back.domain.test.controller;
+package yun.pioneer_back.domain.test;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
