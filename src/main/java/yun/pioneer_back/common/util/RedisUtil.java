@@ -41,10 +41,4 @@ public class RedisUtil
     public void delete(String key) {
         redisTemplate.delete(key);
     }
-
-    // 데이터 존재 여부 확인
-    @Transactional(readOnly = true)
-    public boolean isPresent(String key) {
-        return redisTemplate.opsForValue().get(key) != null;
-    }
 }
