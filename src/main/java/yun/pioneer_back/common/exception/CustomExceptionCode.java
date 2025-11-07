@@ -16,8 +16,10 @@ public enum CustomExceptionCode
     INVALID_METHOD_ARGUMENT_TYPE(HttpStatus.BAD_REQUEST, "올바르지 않은 메서드 인자 타입입니다."),
     INVALID_REQUEST_DTO(HttpStatus.BAD_REQUEST, "올바르지 않은 요청 dto입니다."),
 
-    // 이메일
+    // 이메일 및 인증번호
     SEND_EMAIL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "이메일 전송 중 에러가 발생하였습니다."),
+    EXPIRED_VERIFICATION_CODE(HttpStatus.CONFLICT, "이미 만료된 인증번호 데이터입니다."),
+    WRONG_VERIFICATION_CODE(HttpStatus.CONFLICT, "틀린 인증번호입니다."),
 
     // Redis
     REDIS_OPERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 작업 수행 중 에러가 발생하였습니다."),

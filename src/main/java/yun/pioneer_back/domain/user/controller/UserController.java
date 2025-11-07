@@ -1,5 +1,6 @@
 package yun.pioneer_back.domain.user.controller;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import yun.pioneer_back.common.response.SuccessResponseDto;
+import yun.pioneer_back.domain.user.dto.CheckVerificationCodeReqDto;
 import yun.pioneer_back.domain.user.dto.SendVerificationCodeReqDto;
 import yun.pioneer_back.domain.user.service.UserService;
 
@@ -30,6 +32,21 @@ public class UserController
         return ResponseEntity.status(HttpStatus.OK)
                 .body(SuccessResponseDto.builder()
                         .message("이메일 인증번호를 성공적으로 전송하였습니다.")
+                        .data(null)
+                        .build());
+    }
+
+    // 이메일 인증번호 확인
+    @PostMapping("/check-verification-code")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<SuccessResponseDto> checkVerificationCode(@Valid @RequestBody CheckVerificationCodeReqDto reqDto,
+                                                                    HttpServletResponse response)
+    {
+        userService.checkVerificationCode(reqDto, response);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("이메일 인증번호를 성공적으로 확인하였습니다.")
                         .data(null)
                         .build());
     }
