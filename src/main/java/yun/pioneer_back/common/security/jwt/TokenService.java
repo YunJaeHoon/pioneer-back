@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.security.Key;
 import java.time.ZonedDateTime;
 import java.util.Date;
+import java.util.Map;
 
 @Service
 public class TokenService
@@ -24,27 +25,15 @@ public class TokenService
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // 토큰 생성 (id 제외)
-    public String createToken(TokenType tokenType)
+    // 토큰 생성
+    public String createToken(TokenType tokenType, Map<String, Object> claimsMap)
     {
         Claims claims = Jwts.claims();
 
-        ZonedDateTime now = ZonedDateTime.now();
-        ZonedDateTime expiredAt = now.plusSeconds(tokenType.getTtl());
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(Date.from(now.toInstant()))
-                .setExpiration(Date.from(expiredAt.toInstant()))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    // 토큰 생성 (id 포함)
-    public String createToken(Long id, TokenType tokenType)
-    {
-        Claims claims = Jwts.claims();
-        claims.put("id", id);
+        // 사용자 정의 클레임 추가
+        if (claimsMap != null) {
+            claims.putAll(claimsMap);
+        }
 
         ZonedDateTime now = ZonedDateTime.now();
         ZonedDateTime expiredAt = now.plusSeconds(tokenType.getTtl());
