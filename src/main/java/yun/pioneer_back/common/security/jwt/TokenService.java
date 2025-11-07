@@ -24,35 +24,35 @@ public class TokenService
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // 토큰 생성
+    // 토큰 생성 (id 제외)
     public String createToken(TokenType tokenType)
     {
         Claims claims = Jwts.claims();
 
         ZonedDateTime now = ZonedDateTime.now();
-        ZonedDateTime expiresAt = now.plusSeconds(tokenType.getTtl());
+        ZonedDateTime expiredAt = now.plusSeconds(tokenType.getTtl());
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(Date.from(now.toInstant()))
-                .setExpiration(Date.from(expiresAt.toInstant()))
+                .setExpiration(Date.from(expiredAt.toInstant()))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 토큰 생성
+    // 토큰 생성 (id 포함)
     public String createToken(Long id, TokenType tokenType)
     {
         Claims claims = Jwts.claims();
         claims.put("id", id);
 
         ZonedDateTime now = ZonedDateTime.now();
-        ZonedDateTime expiresAt = now.plusSeconds(tokenType.getTtl());
+        ZonedDateTime expiredAt = now.plusSeconds(tokenType.getTtl());
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(Date.from(now.toInstant()))
-                .setExpiration(Date.from(expiresAt.toInstant()))
+                .setExpiration(Date.from(expiredAt.toInstant()))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
