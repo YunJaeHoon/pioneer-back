@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public enum TokenType
 {
-    EMAIL_VERIFICATION_TOKEN("email-verification-token", 60 * 60, false),
+    EMAIL_VERIFICATION_TOKEN("email-verification-token", 60 * 60, true),
     ACCESS_TOKEN("access-token", 60 * 60, false),
     REFRESH_TOKEN("refresh-token", 60 * 60 * 24 * 30, true);
 
