@@ -8,6 +8,8 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import yun.pioneer_back.common.exception.CustomException;
+import yun.pioneer_back.common.exception.CustomExceptionCode;
 
 import java.security.Key;
 import java.time.ZonedDateTime;
@@ -68,6 +70,19 @@ public class TokenService
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    // 사용자 정의 클레임 추출
+    public Object getClaims(String token, String claimsKey, Class<?> requiredType)
+    {
+        // 클레임 추출
+        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+
+        if(claims.containsKey(claimsKey)) {
+            return claims.get(claimsKey, requiredType);
+        } else {
+            throw new CustomException(CustomExceptionCode.CLAIMS_NOT_FOUND, claimsKey);
         }
     }
 }
