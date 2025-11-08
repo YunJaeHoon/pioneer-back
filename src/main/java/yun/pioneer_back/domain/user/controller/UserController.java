@@ -6,12 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import yun.pioneer_back.common.response.SuccessResponseDto;
 import yun.pioneer_back.domain.user.dto.CheckVerificationCodeReqDto;
+import yun.pioneer_back.domain.user.dto.JoinReqDto;
 import yun.pioneer_back.domain.user.dto.SendVerificationCodeReqDto;
 import yun.pioneer_back.domain.user.service.UserService;
 
@@ -47,6 +45,22 @@ public class UserController
         return ResponseEntity.status(HttpStatus.OK)
                 .body(SuccessResponseDto.builder()
                         .message("이메일 인증번호를 성공적으로 확인하였습니다.")
+                        .data(null)
+                        .build());
+    }
+
+    // 회원가입
+    @PostMapping("/join")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<SuccessResponseDto> join(@Valid @RequestBody JoinReqDto reqDto,
+                                                   @CookieValue(name = "email-verification-token") String verificationToken,
+                                                   HttpServletResponse response)
+    {
+        userService.join(reqDto, verificationToken, response);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("성공적으로 회원가입 되었습니다.")
                         .data(null)
                         .build());
     }

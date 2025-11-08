@@ -46,7 +46,11 @@ public class User extends BaseEntity
     private UserRole role;
 
     // refresh token
-    @NotNull
     @Column(length = 255)
     private String refreshToken;
+
+    // refresh token 갱신
+    public void renewRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
 }

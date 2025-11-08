@@ -3,29 +3,45 @@ package yun.pioneer_back.domain.user.service;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import yun.pioneer_back.common.entity.User;
 import yun.pioneer_back.common.exception.CustomException;
 import yun.pioneer_back.common.exception.CustomExceptionCode;
+import yun.pioneer_back.common.repository.UserRepository;
+import yun.pioneer_back.common.security.UserRole;
 import yun.pioneer_back.common.security.jwt.TokenService;
 import yun.pioneer_back.common.security.jwt.TokenType;
 import yun.pioneer_back.common.util.EmailUtil;
 import yun.pioneer_back.common.util.RedisUtil;
 import yun.pioneer_back.domain.user.dto.CheckVerificationCodeReqDto;
+import yun.pioneer_back.domain.user.dto.JoinReqDto;
 import yun.pioneer_back.domain.user.dto.SendVerificationCodeReqDto;
 
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class UserService
 {
+    private final UserRepository userRepository;
+
     private final EmailUtil emailUtil;
     private final RedisUtil redisUtil;
 
     private final TokenService tokenService;
+
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    // 8~20 글자, (영문, 숫자, 특수문자)를 모두 포함
+    private final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?])[A-Za-z\\d!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]{8,20}$";
+
+    // 2~12 글자, (영문, 한글, 숫자)만 허용
+    private final String NICKNAME_REGEX = "^[A-Za-z0-9가-힣]{2,12}$";
 
     // 이메일 인증번호 전송
     @Transactional
@@ -93,5 +109,67 @@ public class UserService
 
         // 쿠키를 응답에 포함
         response.addCookie(verificationCookie);
+    }
+
+    // 회원가입
+    @Transactional
+    public void join(JoinReqDto reqDto, String verificationToken, HttpServletResponse response)
+    {
+        // 이메일 인증 토큰 검증
+        tokenService.checkToken(verificationToken);
+
+        // 이메일 인증 토큰 내의 이메일 정보 추출
+        String verifiedEmail = tokenService.getClaims(verificationToken, "email", String.class);
+
+        // 이메일 인증 여부 확인
+        if(!verifiedEmail.equals(reqDto.getEmail())) {
+            throw new CustomException(CustomExceptionCode.UNAUTHORIZED_EMAIL, reqDto.getEmail());
+        }
+
+        // 비밀번호 형식 체크
+        if(!Pattern.matches(PASSWORD_REGEX, reqDto.getPassword())) {
+            throw new CustomException(CustomExceptionCode.INVALID_PASSWORD_FORMAT, reqDto.getPassword());
+        }
+
+        // 닉네임 형식 체크
+        if(!Pattern.matches(NICKNAME_REGEX, reqDto.getNickname())) {
+            throw new CustomException(CustomExceptionCode.INVALID_NICKNAME_FORMAT, reqDto.getNickname());
+        }
+
+        // 이메일 중복 확인
+        if(userRepository.findByEmail(reqDto.getEmail()).isPresent()) {
+            throw new CustomException(CustomExceptionCode.ALREADY_USED_EMAIL, reqDto.getEmail());
+        }
+
+        // 닉네임 중복 확인
+        if(userRepository.findByNickname(reqDto.getNickname()).isPresent()) {
+            throw new CustomException(CustomExceptionCode.ALREADY_USED_NICKNAME, reqDto.getNickname());
+        }
+
+        // 사용자 정보 생성
+        User user = User.builder()
+                .email(reqDto.getEmail())
+                .password(bCryptPasswordEncoder.encode(reqDto.getPassword()))
+                .nickname(reqDto.getNickname())
+                .role(UserRole.USER)
+                .build();
+
+        // 사용자 정보 저장
+        userRepository.save(user);
+
+        // access token 및 refresh token 발급
+        String accessToken = tokenService.createToken(TokenType.ACCESS_TOKEN, Map.of("userId", user.getId()));
+        String refreshToken = tokenService.createToken(TokenType.REFRESH_TOKEN, Map.of("userId", user.getId()));
+
+        // 사용자 refresh tooken 정보 입력
+        user.renewRefreshToken(refreshToken);
+
+        // 토큰을 쿠키로 변환
+        Cookie accessTokenCookie = tokenService.parseTokenToCookie(accessToken, TokenType.ACCESS_TOKEN);
+        Cookie refreshTokenCookie = tokenService.parseTokenToCookie(refreshToken, TokenType.REFRESH_TOKEN);
+
+        // 쿠키를 응답에 포함
+        response.addCookie(accessTokenCookie);
+        response.addCookie(refreshTokenCookie);
     }
 }
