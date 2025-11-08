@@ -12,3 +12,23 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+  ## Redis
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
+  ## 이메일
+  mail:
+    host: smtp.gmail.com
+    port: ${EMAIL_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 5000
+          starttls:
+            enable: true
