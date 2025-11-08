@@ -74,7 +74,7 @@ public class TokenService
     }
 
     // 사용자 정의 클레임 추출
-    public Object getClaims(String token, String claimsKey, Class<?> requiredType)
+    public <T> T getClaims(String token, String claimsKey, Class<T> requiredType)
     {
         // 클레임 추출
         Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
