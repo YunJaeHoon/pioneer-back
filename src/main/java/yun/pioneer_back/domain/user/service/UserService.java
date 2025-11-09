@@ -10,7 +10,7 @@ import yun.pioneer_back.common.entity.User;
 import yun.pioneer_back.common.exception.CustomException;
 import yun.pioneer_back.common.exception.CustomExceptionCode;
 import yun.pioneer_back.common.repository.UserRepository;
-import yun.pioneer_back.common.security.UserRole;
+import yun.pioneer_back.common.entity.UserRole;
 import yun.pioneer_back.common.security.jwt.TokenService;
 import yun.pioneer_back.common.security.jwt.TokenType;
 import yun.pioneer_back.common.util.EmailUtil;
@@ -152,24 +152,10 @@ public class UserService
                 .password(bCryptPasswordEncoder.encode(reqDto.getPassword()))
                 .nickname(reqDto.getNickname())
                 .role(UserRole.USER)
+                .refreshToken(null)
                 .build();
 
         // 사용자 정보 저장
         userRepository.save(user);
-
-        // access token 및 refresh token 발급
-        String accessToken = tokenService.createToken(TokenType.ACCESS_TOKEN, Map.of("userId", user.getId()));
-        String refreshToken = tokenService.createToken(TokenType.REFRESH_TOKEN, Map.of("userId", user.getId()));
-
-        // 사용자 refresh tooken 정보 입력
-        user.renewRefreshToken(refreshToken);
-
-        // 토큰을 쿠키로 변환
-        Cookie accessTokenCookie = tokenService.parseTokenToCookie(accessToken, TokenType.ACCESS_TOKEN);
-        Cookie refreshTokenCookie = tokenService.parseTokenToCookie(refreshToken, TokenType.REFRESH_TOKEN);
-
-        // 쿠키를 응답에 포함
-        response.addCookie(accessTokenCookie);
-        response.addCookie(refreshTokenCookie);
     }
 }
