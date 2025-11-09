@@ -1,4 +1,4 @@
-package yun.pioneer_back.common.security;
+package yun.pioneer_back.common.entity;
 
 import lombok.AllArgsConstructor;
 
