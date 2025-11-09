@@ -34,4 +34,28 @@ public class TestController
     {
         throw new CustomException(CustomExceptionCode.EXAMPLE_ERROR_CODE, null);
     }
+
+    // USER 권한 테스트
+    @GetMapping("/role/user")
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
+    public ResponseEntity<SuccessResponseDto> testRoleUser()
+    {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("USER 권한을 가지고 있습니다.")
+                        .data(null)
+                        .build());
+    }
+
+    // ADMIN 권한 테스트
+    @GetMapping("/role/admin")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<SuccessResponseDto> testRoleAdmin()
+    {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("ADMIN 권한을 가지고 있습니다.")
+                        .data(null)
+                        .build());
+    }
 }
