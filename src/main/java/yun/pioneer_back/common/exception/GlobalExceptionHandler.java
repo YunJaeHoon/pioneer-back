@@ -75,20 +75,6 @@ public class GlobalExceptionHandler
                         .build());
     }
 
-    // 그 외 모든 예외 처리 핸들러
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ExceptionResponseDto> globalExceptionHandler(Exception e)
-    {
-        logErrorMessage(e, CustomExceptionCode.INTERNAL_SERVER_ERROR.name(), e.getMessage(), null);
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ExceptionResponseDto.builder()
-                        .code(CustomExceptionCode.INTERNAL_SERVER_ERROR.name())
-                        .message(e.getMessage())
-                        .data(null)
-                        .build());
-    }
-
     // 에러 메시지 로깅
     private void logErrorMessage(Exception e, String code, String message, Object data)
     {
