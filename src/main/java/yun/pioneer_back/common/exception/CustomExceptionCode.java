@@ -23,9 +23,13 @@ public enum CustomExceptionCode
     REDIS_OPERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 작업 수행 중 에러가 발생하였습니다."),
 
     // User 관련
+    LOGIN_FAILED(HttpStatus.BAD_REQUEST, "로그인에 실패하였습니다."),
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "잘못된 비밀번호 형식입니다."),
     INVALID_NICKNAME_FORMAT(HttpStatus.BAD_REQUEST, "잘못된 닉네임 형식입니다."),
     UNAUTHORIZED_EMAIL(HttpStatus.UNAUTHORIZED, "인증받지 않은 이메일입니다."),
+    NOT_LOGIN(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다"),
+    LOW_AUTHORITY(HttpStatus.FORBIDDEN, "권한이 부족합니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자가 존재하지 않습니다."),
     CLAIMS_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자 정의 클레임 값이 존재하지 않습니다."),
     EXPIRED_VERIFICATION_CODE(HttpStatus.CONFLICT, "이미 만료된 인증번호 데이터입니다."),
     WRONG_VERIFICATION_CODE(HttpStatus.CONFLICT, "틀린 인증번호입니다."),
