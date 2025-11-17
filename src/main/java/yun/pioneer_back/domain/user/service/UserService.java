@@ -113,7 +113,7 @@ public class UserService
 
     // 회원가입
     @Transactional
-    public void join(JoinReqDto reqDto, String verificationToken, HttpServletResponse response)
+    public void join(JoinReqDto reqDto, String verificationToken)
     {
         // 이메일 인증 토큰 검증
         tokenService.checkToken(verificationToken);

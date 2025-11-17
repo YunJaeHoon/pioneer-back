@@ -53,10 +53,9 @@ public class UserController
     @PostMapping("/join")
     @PreAuthorize("permitAll()")
     public ResponseEntity<SuccessResponseDto> join(@Valid @RequestBody JoinReqDto reqDto,
-                                                   @CookieValue(name = "email-verification-token") String verificationToken,
-                                                   HttpServletResponse response)
+                                                   @CookieValue(name = "email-verification-token") String verificationToken)
     {
-        userService.join(reqDto, verificationToken, response);
+        userService.join(reqDto, verificationToken);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(SuccessResponseDto.builder()
