@@ -47,30 +47,48 @@ public class UserService
     @Transactional
     public void sendVerificationCode(SendVerificationCodeReqDto reqDto)
     {
-        // 무작위 인증번호 생성
-        SecureRandom random = new SecureRandom();
-        int number = random.nextInt(1_0000_0000);
-        String verificationCode = String.format("%08d", number);
-
-        // Redis에 <이메일, 인증번호> 데이터 저장
-        redisUtil.set("email:verification_code:" + reqDto.getEmail(), verificationCode, Duration.ofMinutes(10));
-
-        // 이메일 전송
-        emailUtil.sendEmail(
-                reqDto.getEmail(),
-                "[서부의 바람은, 손끝으로 분다] 이메일 인증번호",
-                String.format(
-                        """
-                            <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
-                                <div style="width: 100%%; font-size: 1.125rem; font-weight: 400; color: #373737; margin-top: 50px;">
-                                    다음 인증번호를 <b>인증번호 확인란</b>에 입력하시게. <br />
-                                    인증번호가 틀리면 인증번호를 다시 전송해야 하니 주의하도록!
+        // 이메일 중복 확인
+        if(userRepository.findByEmail(reqDto.getEmail()).isPresent())
+        {
+            // 이메일 전송
+            emailUtil.sendEmail(
+                    reqDto.getEmail(),
+                    "[서부의 바람은, 손끝으로 분다] 이메일 인증번호",
+                    """
+                                <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
+                                    <div style="width: 100%%; font-size: 1.125rem; font-weight: 400; color: #373737; margin-top: 50px; margin-bottom: 100px;">
+                                        해당 이메일로 만들어진 계정이 이미 존재한다! <br />
+                                        비밀번호가 기억나지 않는다면, 로그인 페이지의 <b>비밀번호를 잊으셨나요?</b> 기능을 이용하시게.
+                                    </div>
                                 </div>
-                                <div style="font-size: 2.5rem; font-weight: 600; color: #373737; margin-top: 100px; margin-bottom: 100px;">%s</div>
-                            </div>
-                        """,
-                        verificationCode
-                ));
+                            """);
+        }
+        else
+        {
+            // 무작위 인증번호 생성
+            SecureRandom random = new SecureRandom();
+            int number = random.nextInt(1_0000_0000);
+            String verificationCode = String.format("%08d", number);
+
+            // Redis에 <이메일, 인증번호> 데이터 저장
+            redisUtil.set("email:verification_code:" + reqDto.getEmail(), verificationCode, Duration.ofMinutes(10));
+
+            // 이메일 전송
+            emailUtil.sendEmail(
+                    reqDto.getEmail(),
+                    "[서부의 바람은, 손끝으로 분다] 이메일 인증번호",
+                    String.format(
+                            """
+                                <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
+                                    <div style="width: 100%%; font-size: 1.125rem; font-weight: 400; color: #373737; margin-top: 50px;">
+                                        다음 인증번호를 <b>인증번호 입력란</b>에 입력하시게. <br />
+                                        인증번호가 틀리면 인증번호를 다시 전송해야 하니 주의하도록!
+                                    </div>
+                                    <div style="font-size: 2.5rem; font-weight: 600; color: #373737; margin-top: 100px; margin-bottom: 100px;">%s</div>
+                                </div>
+                            """,
+                            verificationCode));
+        }
     }
 
     // 이메일 인증번호 확인
