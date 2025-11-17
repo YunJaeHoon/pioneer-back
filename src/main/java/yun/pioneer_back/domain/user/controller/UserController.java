@@ -49,6 +49,20 @@ public class UserController
                         .build());
     }
 
+    // 닉네임 중복 확인
+    @GetMapping("/check-nickname-duplication")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<SuccessResponseDto> checkNicknameDuplication(@Valid @RequestParam String nickname)
+    {
+        userService.checkNicknameDuplication(nickname);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("닉네임 중복 확인에 성공하였습니다.")
+                        .data(null)
+                        .build());
+    }
+
     // 회원가입
     @PostMapping("/join")
     @PreAuthorize("permitAll()")

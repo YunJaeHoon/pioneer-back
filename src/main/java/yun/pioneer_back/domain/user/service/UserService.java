@@ -111,6 +111,16 @@ public class UserService
         response.addCookie(verificationCookie);
     }
 
+    // 닉네임 중복 확인
+    @Transactional(readOnly = true)
+    public void checkNicknameDuplication(String nickname)
+    {
+        // 닉네임 중복 확인
+        if(userRepository.findByNickname(nickname).isPresent()) {
+            throw new CustomException(CustomExceptionCode.ALREADY_USED_NICKNAME, nickname);
+        }
+    }
+
     // 회원가입
     @Transactional
     public void join(JoinReqDto reqDto, String verificationToken)
