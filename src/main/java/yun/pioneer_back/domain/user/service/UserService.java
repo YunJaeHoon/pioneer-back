@@ -53,7 +53,7 @@ public class UserService
             // 이메일 전송
             emailUtil.sendEmail(
                     reqDto.getEmail(),
-                    "[서부의 바람은, 손끝으로 분다] 이메일 인증번호",
+                    "[서부의 바람은, 손끝에서 분다] 이메일 인증번호",
                     """
                                 <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
                                     <div style="width: 100%%; font-size: 1.125rem; font-weight: 400; color: #373737; margin-top: 50px; margin-bottom: 100px;">
@@ -76,7 +76,7 @@ public class UserService
             // 이메일 전송
             emailUtil.sendEmail(
                     reqDto.getEmail(),
-                    "[서부의 바람은, 손끝으로 분다] 이메일 인증번호",
+                    "[서부의 바람은, 손끝에서 분다] 이메일 인증번호",
                     String.format(
                             """
                                 <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
