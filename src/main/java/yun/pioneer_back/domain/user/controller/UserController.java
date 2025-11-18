@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import yun.pioneer_back.common.response.SuccessResponseDto;
 import yun.pioneer_back.domain.user.dto.CheckVerificationCodeReqDto;
 import yun.pioneer_back.domain.user.dto.JoinReqDto;
+import yun.pioneer_back.domain.user.dto.ResetPasswordReqDto;
 import yun.pioneer_back.domain.user.dto.SendVerificationCodeReqDto;
 import yun.pioneer_back.domain.user.service.UserService;
 
@@ -74,6 +75,20 @@ public class UserController
         return ResponseEntity.status(HttpStatus.OK)
                 .body(SuccessResponseDto.builder()
                         .message("성공적으로 회원가입 되었습니다.")
+                        .data(null)
+                        .build());
+    }
+
+    // 비밀번호 초기화
+    @PostMapping("/reset-password")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<SuccessResponseDto> resetPassword(@Valid @RequestBody ResetPasswordReqDto reqDto)
+    {
+        userService.resetPassword(reqDto);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("비밀번호를 성공적으로 초기화하였습니다.")
                         .data(null)
                         .build());
     }
