@@ -52,4 +52,9 @@ public class User extends BaseEntity
     public void renewRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
+
+    // 비밀번호 초기화
+    public void resetPassword(String newPassword) {
+        this.password = newPassword;
+    }
 }

@@ -17,11 +17,12 @@ import yun.pioneer_back.common.util.EmailUtil;
 import yun.pioneer_back.common.util.RedisUtil;
 import yun.pioneer_back.domain.user.dto.CheckVerificationCodeReqDto;
 import yun.pioneer_back.domain.user.dto.JoinReqDto;
+import yun.pioneer_back.domain.user.dto.ResetPasswordReqDto;
 import yun.pioneer_back.domain.user.dto.SendVerificationCodeReqDto;
 
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Service
@@ -42,6 +43,12 @@ public class UserService
 
     // 2~12 글자, (영문, 한글, 숫자)만 허용
     private final String NICKNAME_REGEX = "^[A-Za-z0-9가-힣]{2,12}$";
+
+    // 비밀번호 허용 영문, 숫자, 특수문자
+    private static final String PASSWORD_POSSIBLE_ENGLISH = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    private static final String PASSWORD_POSSIBLE_NUMBER = "0123456789";
+    private static final String PASSWORD_POSSIBLE_SPECIAL = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?";
+    private static final String PASSWORD_ALL_POSSIBLE_LETTERS = PASSWORD_POSSIBLE_ENGLISH + PASSWORD_POSSIBLE_NUMBER + PASSWORD_POSSIBLE_SPECIAL;
 
     // 이메일 인증번호 전송
     @Transactional
@@ -185,5 +192,76 @@ public class UserService
 
         // 사용자 정보 저장
         userRepository.save(user);
+    }
+
+    // 비밀번호 초기화
+    @Transactional
+    public void resetPassword(ResetPasswordReqDto reqDto)
+    {
+        // 사용자 조회
+        Optional<User> userOptional = userRepository.findByEmail(reqDto.getEmail());
+
+        // 계정 존재에 따른 분기 처리
+        if(userOptional.isPresent())
+        {
+            // 새로운 비밀번호 생성
+            SecureRandom random = new SecureRandom();
+            List<Character> newPasswordList = new ArrayList<>();
+
+            // 영문, 숫자, 특수문자를 최소 1개씩 포함
+            newPasswordList.add(PASSWORD_POSSIBLE_ENGLISH.charAt(random.nextInt(PASSWORD_POSSIBLE_ENGLISH.length())));
+            newPasswordList.add(PASSWORD_POSSIBLE_NUMBER.charAt(random.nextInt(PASSWORD_POSSIBLE_NUMBER.length())));
+            newPasswordList.add(PASSWORD_POSSIBLE_SPECIAL.charAt(random.nextInt(PASSWORD_POSSIBLE_SPECIAL.length())));
+
+            // 나머지 길이만큼 아무 문자나 추가
+            for(int i = 3; i < 12; i++) {
+                newPasswordList.add(PASSWORD_ALL_POSSIBLE_LETTERS.charAt(random.nextInt(PASSWORD_ALL_POSSIBLE_LETTERS.length())));
+            }
+
+            // 순서 섞기
+            Collections.shuffle(newPasswordList);
+
+            // 문자열로 변환
+            StringBuilder sb = new StringBuilder();
+            for(Character c : newPasswordList) {
+                sb.append(c);
+            }
+            String newPassword = sb.toString();
+
+            // 사용자 비밀번호 초기화
+            User user = userOptional.get();
+            user.resetPassword(bCryptPasswordEncoder.encode(newPassword));
+
+            // 이메일 전송
+            emailUtil.sendEmail(
+                    reqDto.getEmail(),
+                    "[서부의 바람은, 손끝에서 분다] 비밀번호 초기화",
+                    String.format(
+                            """
+                                <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
+                                    <div style="width: 100%%; font-size: 1.125rem; font-weight: 400; color: #373737; margin-top: 50px;">
+                                        여기 자네의 <b>비밀번호</b>가 정상적으로 초기화되었다. <br />
+                                        다른 사람이 보지 않도록 주의하도록!
+                                    </div>
+                                    <div style="font-size: 2.5rem; font-weight: 600; color: #373737; margin-top: 100px; margin-bottom: 100px;">%s</div>
+                                </div>
+                            """,
+                            newPassword));
+        }
+        else
+        {
+            // 이메일 전송
+            emailUtil.sendEmail(
+                    reqDto.getEmail(),
+                    "[서부의 바람은, 손끝에서 분다] 비밀번호 초기화",
+                    """
+                                <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
+                                    <div style="width: 100%%; font-size: 1.125rem; font-weight: 400; color: #373737; margin-top: 50px; margin-bottom: 100px;">
+                                        해당 이메일로 만들어진 계정이 존재하지 않는군... <br />
+                                        <b>회원가입</b>을 새로 해야겠구만!
+                                    </div>
+                                </div>
+                            """);
+        }
     }
 }
