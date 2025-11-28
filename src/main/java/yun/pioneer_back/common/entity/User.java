@@ -48,6 +48,14 @@ public class User extends BaseEntity
     @Column(length = 255)
     private String refreshToken;
 
+    // 레벨
+    @NotNull
+    private int level;
+
+    // 경험치
+    @NotNull
+    private int exp;
+
     // refresh token 갱신
     public void renewRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
