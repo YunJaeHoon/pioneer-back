@@ -50,11 +50,13 @@ public class User extends BaseEntity
 
     // 레벨
     @NotNull
-    private int level;
+    @Builder.Default
+    private int level = 0;
 
     // 경험치
     @NotNull
-    private int exp;
+    @Builder.Default
+    private int exp = 0;
 
     // refresh token 갱신
     public void renewRefreshToken(String refreshToken) {
