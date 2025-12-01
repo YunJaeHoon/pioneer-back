@@ -94,7 +94,7 @@ public class UserController
     }
 
     // access token 재발급
-    @PostMapping("/refresh-access-token")
+    @GetMapping("/refresh-access-token")
     @PreAuthorize("permitAll()")
     public ResponseEntity<SuccessResponseDto> refreshAccessToken(@CookieValue(name = "refresh-token") String refreshToken,
                                                                  HttpServletResponse response)
