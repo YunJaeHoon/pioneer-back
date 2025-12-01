@@ -1,10 +1,10 @@
 package yun.pioneer_back.common.exception;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -39,7 +39,7 @@ public class GlobalExceptionHandler
 
         logErrorMessage(e, CustomExceptionCode.INVALID_METHOD_ARGUMENT.name(), message, null);
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(CustomExceptionCode.INVALID_METHOD_ARGUMENT.getHttpStatus())
                 .body(ExceptionResponseDto.builder()
                         .code(CustomExceptionCode.INVALID_METHOD_ARGUMENT.name())
                         .message(message)
@@ -53,7 +53,7 @@ public class GlobalExceptionHandler
     {
         logErrorMessage(e, CustomExceptionCode.INVALID_METHOD_ARGUMENT_TYPE.name(), e.getMessage(), null);
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(CustomExceptionCode.INVALID_METHOD_ARGUMENT_TYPE.getHttpStatus())
                 .body(ExceptionResponseDto.builder()
                         .code(CustomExceptionCode.INVALID_METHOD_ARGUMENT_TYPE.name())
                         .message(e.getMessage())
@@ -67,9 +67,23 @@ public class GlobalExceptionHandler
     {
         logErrorMessage(e, CustomExceptionCode.INVALID_REQUEST_DTO.name(), e.getMessage(), null);
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(CustomExceptionCode.INVALID_REQUEST_DTO.getHttpStatus())
                 .body(ExceptionResponseDto.builder()
                         .code(CustomExceptionCode.INVALID_REQUEST_DTO.name())
+                        .message(e.getMessage())
+                        .data(null)
+                        .build());
+    }
+
+    // 쿠키 존재 여부 예외 처리 핸들러
+    @ExceptionHandler(MissingRequestCookieException.class)
+    public ResponseEntity<ExceptionResponseDto> handleMissingRequestCookieException(MissingRequestCookieException e)
+    {
+        logErrorMessage(e, CustomExceptionCode.COOKIE_NOT_FOUND.name(), e.getMessage(), null);
+
+        return ResponseEntity.status(CustomExceptionCode.COOKIE_NOT_FOUND.getHttpStatus())
+                .body(ExceptionResponseDto.builder()
+                        .code(CustomExceptionCode.COOKIE_NOT_FOUND.name())
                         .message(e.getMessage())
                         .data(null)
                         .build());

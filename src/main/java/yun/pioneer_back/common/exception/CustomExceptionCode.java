@@ -15,6 +15,7 @@ public enum CustomExceptionCode
     INVALID_METHOD_ARGUMENT(HttpStatus.BAD_REQUEST, "올바르지 않은 메서드 인자입니다."),
     INVALID_METHOD_ARGUMENT_TYPE(HttpStatus.BAD_REQUEST, "올바르지 않은 메서드 인자 타입입니다."),
     INVALID_REQUEST_DTO(HttpStatus.BAD_REQUEST, "올바르지 않은 요청 dto입니다."),
+    COOKIE_NOT_FOUND(HttpStatus.BAD_REQUEST, "쿠키가 존재하지 않습니다."),
 
     // 이메일
     SEND_EMAIL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "이메일 전송 중 에러가 발생하였습니다."),
@@ -26,6 +27,8 @@ public enum CustomExceptionCode
     LOGIN_FAILED(HttpStatus.BAD_REQUEST, "로그인에 실패하였습니다."),
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "잘못된 비밀번호 형식입니다."),
     INVALID_NICKNAME_FORMAT(HttpStatus.BAD_REQUEST, "잘못된 닉네임 형식입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 refresh token 입니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "만료된 refresh token 입니다."),
     UNAUTHORIZED_EMAIL(HttpStatus.UNAUTHORIZED, "인증받지 않은 이메일입니다."),
     NOT_LOGIN(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다"),
     LOW_AUTHORITY(HttpStatus.FORBIDDEN, "권한이 부족합니다."),
