@@ -92,4 +92,19 @@ public class UserController
                         .data(null)
                         .build());
     }
+
+    // access token 재발급
+    @PostMapping("/refresh-access-token")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<SuccessResponseDto> refreshAccessToken(@CookieValue(name = "refresh-token") String refreshToken,
+                                                                 HttpServletResponse response)
+    {
+        userService.refreshAccessToken(refreshToken, response);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("access token 재발급에 성공하였습니다.")
+                        .data(null)
+                        .build());
+    }
 }

@@ -11,6 +11,7 @@ import yun.pioneer_back.common.exception.CustomException;
 import yun.pioneer_back.common.exception.CustomExceptionCode;
 import yun.pioneer_back.common.repository.UserRepository;
 import yun.pioneer_back.common.entity.UserRole;
+import yun.pioneer_back.common.response.SuccessResponseDto;
 import yun.pioneer_back.common.security.jwt.TokenService;
 import yun.pioneer_back.common.security.jwt.TokenType;
 import yun.pioneer_back.common.util.EmailUtil;
@@ -263,5 +264,34 @@ public class UserService
                                 </div>
                             """);
         }
+    }
+
+    // access token 재발급
+    @Transactional
+    public void refreshAccessToken(String refreshToken, HttpServletResponse response)
+    {
+        // refresh token 유효성 체크
+        if(!tokenService.checkToken(refreshToken)) {
+            throw new CustomException(CustomExceptionCode.INVALID_REFRESH_TOKEN, null);
+        }
+
+        // refresh token에서 사용자 정보 추출
+        Long userId = tokenService.getClaims(refreshToken, "userId", Long.class);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomExceptionCode.USER_NOT_FOUND, null));
+
+        // refresh token 만료 여부 체크
+        if(!user.getRefreshToken().equals(refreshToken)) {
+            throw new CustomException(CustomExceptionCode.EXPIRED_REFRESH_TOKEN, null);
+        }
+
+        // access token 발급
+        String accessToken = tokenService.createToken(TokenType.ACCESS_TOKEN, Map.of("userId", user.getId()));
+
+        // 토큰을 쿠키로 변환
+        Cookie accessTokenCookie = tokenService.parseTokenToCookie(accessToken, TokenType.ACCESS_TOKEN);
+
+        // 쿠키를 응답에 포함
+        response.addCookie(accessTokenCookie);
     }
 }
