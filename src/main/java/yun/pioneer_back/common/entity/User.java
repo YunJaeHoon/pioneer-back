@@ -58,6 +58,12 @@ public class User extends BaseEntity
     @Builder.Default
     private int exp = 0;
 
+    // 프로필 이미지
+    @NotNull
+    @Column(length = 255)
+    @Builder.Default
+    private String profileImage = "BASIC_1";
+
     // refresh token 갱신
     public void renewRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
