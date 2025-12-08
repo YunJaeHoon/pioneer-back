@@ -6,12 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import yun.pioneer_back.common.entity.User;
 import yun.pioneer_back.common.response.SuccessResponseDto;
-import yun.pioneer_back.domain.user.dto.CheckVerificationCodeReqDto;
-import yun.pioneer_back.domain.user.dto.JoinReqDto;
-import yun.pioneer_back.domain.user.dto.ResetPasswordReqDto;
-import yun.pioneer_back.domain.user.dto.SendVerificationCodeReqDto;
+import yun.pioneer_back.common.security.CustomUserDetails;
+import yun.pioneer_back.domain.user.dto.*;
 import yun.pioneer_back.domain.user.service.UserService;
 
 @RestController
@@ -105,6 +105,21 @@ public class UserController
                 .body(SuccessResponseDto.builder()
                         .message("access token 재발급에 성공하였습니다.")
                         .data(null)
+                        .build());
+    }
+
+    // 기본 프로필 정보 조회
+    @GetMapping("/basic-info")
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
+    public ResponseEntity<SuccessResponseDto> getBasicUserInfo(@AuthenticationPrincipal CustomUserDetails userDetails)
+    {
+        User user = userDetails.getUser();
+        GetBasicUserInfoResDto data = userService.getBasicUserInfo(user);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("기본 프로필 정보를 성공적으로 조회하였습니다.")
+                        .data(data)
                         .build());
     }
 }

@@ -3,6 +3,7 @@ package yun.pioneer_back.domain.user.service;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,21 +12,19 @@ import yun.pioneer_back.common.exception.CustomException;
 import yun.pioneer_back.common.exception.CustomExceptionCode;
 import yun.pioneer_back.common.repository.UserRepository;
 import yun.pioneer_back.common.entity.UserRole;
-import yun.pioneer_back.common.response.SuccessResponseDto;
 import yun.pioneer_back.common.security.jwt.TokenService;
 import yun.pioneer_back.common.security.jwt.TokenType;
 import yun.pioneer_back.common.util.EmailUtil;
+import yun.pioneer_back.common.util.LevelUtil;
 import yun.pioneer_back.common.util.RedisUtil;
-import yun.pioneer_back.domain.user.dto.CheckVerificationCodeReqDto;
-import yun.pioneer_back.domain.user.dto.JoinReqDto;
-import yun.pioneer_back.domain.user.dto.ResetPasswordReqDto;
-import yun.pioneer_back.domain.user.dto.SendVerificationCodeReqDto;
+import yun.pioneer_back.domain.user.dto.*;
 
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService
@@ -34,6 +33,7 @@ public class UserService
 
     private final EmailUtil emailUtil;
     private final RedisUtil redisUtil;
+    private final LevelUtil levelUtil;
 
     private final TokenService tokenService;
 
@@ -293,5 +293,17 @@ public class UserService
 
         // 쿠키를 응답에 포함
         response.addCookie(accessTokenCookie);
+    }
+
+    // 기본 프로필 정보 조회
+    @Transactional(readOnly = true)
+    public GetBasicUserInfoResDto getBasicUserInfo(User user)
+    {
+        return GetBasicUserInfoResDto.builder()
+                .nickname(user.getNickname())
+                .level(user.getLevel())
+                .exp(user.getExp())
+                .requiredExp(levelUtil.getRequiredExp(user.getLevel()))
+                .build();
     }
 }
