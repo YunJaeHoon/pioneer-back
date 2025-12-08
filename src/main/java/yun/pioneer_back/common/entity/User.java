@@ -60,9 +60,9 @@ public class User extends BaseEntity
 
     // 프로필 이미지
     @NotNull
-    @Column(length = 255)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String profileImage = "BASIC_1";
+    private UserProfileImage profileImage = UserProfileImage.BASIC_1;
 
     // refresh token 갱신
     public void renewRefreshToken(String refreshToken) {
