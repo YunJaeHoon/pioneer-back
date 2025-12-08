@@ -301,6 +301,7 @@ public class UserService
     {
         return GetBasicUserInfoResDto.builder()
                 .nickname(user.getNickname())
+                .profileImage(user.getProfileImage().name())
                 .level(user.getLevel())
                 .exp(user.getExp())
                 .requiredExp(levelUtil.getRequiredExp(user.getLevel()))

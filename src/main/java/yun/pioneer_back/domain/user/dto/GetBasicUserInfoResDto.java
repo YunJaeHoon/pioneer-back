@@ -7,8 +7,9 @@ import lombok.Getter;
 @Builder
 public class GetBasicUserInfoResDto
 {
-    private String nickname;    // 닉네임
-    private int level;          // 레벨
-    private int exp;            // 현재 경험치
-    private int requiredExp;    // 레벨업에 필요한 총 경험치
+    private String nickname;        // 닉네임
+    private String profileImage;    // 프로필 이미지
+    private int level;              // 레벨
+    private int exp;                // 현재 경험치
+    private int requiredExp;        // 레벨업에 필요한 총 경험치
 }

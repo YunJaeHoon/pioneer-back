@@ -48,6 +48,12 @@ public class User extends BaseEntity
     @Column(length = 255)
     private String refreshToken;
 
+    // 프로필 이미지
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private UserProfileImage profileImage = UserProfileImage.BASIC_1;
+
     // 레벨
     @NotNull
     @Builder.Default
@@ -57,12 +63,6 @@ public class User extends BaseEntity
     @NotNull
     @Builder.Default
     private int exp = 0;
-
-    // 프로필 이미지
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private UserProfileImage profileImage = UserProfileImage.BASIC_1;
 
     // refresh token 갱신
     public void renewRefreshToken(String refreshToken) {
