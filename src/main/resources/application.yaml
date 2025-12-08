@@ -2,6 +2,10 @@ spring:
   application:
     name: pioneer-back
 
+  ## 외부 yml 파일 추가
+  config:
+    import: classpath:level-system.yml
+
   ## MySQL
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
