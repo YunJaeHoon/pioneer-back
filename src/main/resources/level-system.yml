@@ -1,0 +1,30 @@
+level:
+  rules:
+
+    - min: 0
+      max: 0
+      requiredExp: 1
+
+    - min: 1
+      max: 9
+      requiredExp: 3
+
+    - min: 10
+      max: 49
+      requiredExp: 5
+
+    - min: 50
+      max: 99
+      requiredExp: 8
+
+    - min: 100
+      max: 199
+      requiredExp: 10
+
+    - min: 200
+      max: 499
+      requiredExp: 15
+
+    - min: 500
+      max: 999
+      requiredExp: 20
