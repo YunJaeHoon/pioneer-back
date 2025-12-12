@@ -307,4 +307,26 @@ public class UserService
                 .requiredExp(levelUtil.getRequiredExp(user.getLevel()))
                 .build();
     }
+
+    // 닉네임 변경
+    @Transactional
+    public void updateNickname(User user, UpdateNicknameReqDto reqDto)
+    {
+        // 닉네임을 유지한다면 그냥 리턴
+        if(user.getNickname().equals(reqDto.getNickname())) {
+            return;
+        }
+
+        // 닉네임 형식 체크
+        if(!Pattern.matches(NICKNAME_REGEX, reqDto.getNickname())) {
+            throw new CustomException(CustomExceptionCode.INVALID_NICKNAME_FORMAT, reqDto.getNickname());
+        }
+
+        // 닉네임 중복 체크
+        checkNicknameDuplication(reqDto.getNickname());
+
+        // 닉네임 변경
+        user.updateNickname(reqDto.getNickname());
+        userRepository.save(user);
+    }
 }
