@@ -73,4 +73,14 @@ public class User extends BaseEntity
     public void resetPassword(String newPassword) {
         this.password = newPassword;
     }
+
+    // 닉네임 변경
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    // 프로필 이미지 변경
+    public void updateProfileImage(UserProfileImage profileImage) {
+        this.profileImage = profileImage;
+    }
 }

@@ -122,4 +122,36 @@ public class UserController
                         .data(data)
                         .build());
     }
+
+    // 프로필 이미지 변경
+    @PatchMapping("/profile-image")
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
+    public ResponseEntity<SuccessResponseDto> updateProfileImage(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                                 @Valid @RequestBody UpdateProfileImageReqDto reqDto)
+    {
+        User user = userDetails.getUser();
+        userService.updateProfileImage(user, reqDto);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("프로필 이미지를 성공적으로 변경하였습니다.")
+                        .data(null)
+                        .build());
+    }
+
+    // 닉네임 변경
+    @PatchMapping("/nickname")
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
+    public ResponseEntity<SuccessResponseDto> updateNickname(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                             @Valid @RequestBody UpdateNicknameReqDto reqDto)
+    {
+        User user = userDetails.getUser();
+        userService.updateNickname(user, reqDto);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("닉네임을 성공적으로 변경하였습니다.")
+                        .data(null)
+                        .build());
+    }
 }
