@@ -344,4 +344,16 @@ public class UserService
         user.updateNickname(reqDto.getNickname());
         userRepository.save(user);
     }
+
+    // 로그아웃
+    public void logout(HttpServletResponse response)
+    {
+        // 만료된 access token & refresh token 쿠키 생성
+        Cookie accessTokenCookie = tokenService.createExpiredCookie(TokenType.ACCESS_TOKEN);
+        Cookie refreshTokenCookie = tokenService.createExpiredCookie(TokenType.REFRESH_TOKEN);
+
+        // 쿠키를 응답에 포함
+        response.addCookie(accessTokenCookie);
+        response.addCookie(refreshTokenCookie);
+    }
 }
