@@ -85,4 +85,18 @@ public class TokenService
             throw new CustomException(CustomExceptionCode.CLAIMS_NOT_FOUND, claimsKey);
         }
     }
+
+    // 만료된 토큰 쿠키 생성
+    public Cookie createExpiredCookie(TokenType tokenType)
+    {
+        Cookie cookie = new Cookie(tokenType.getName(), "");
+
+        cookie.setHttpOnly(tokenType.isHttpOnly());
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setAttribute("SameSite", "Strict");
+
+        return cookie;
+    }
 }
