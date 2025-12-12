@@ -154,4 +154,18 @@ public class UserController
                         .data(null)
                         .build());
     }
+
+    // 로그아웃
+    @PostMapping("/logout")
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
+    public ResponseEntity<SuccessResponseDto> logout(HttpServletResponse response)
+    {
+        userService.logout(response);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(SuccessResponseDto.builder()
+                        .message("로그아웃에 성공하였습니다.")
+                        .data(null)
+                        .build());
+    }
 }
