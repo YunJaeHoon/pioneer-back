@@ -8,6 +8,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import yun.pioneer_back.common.entity.User;
+import yun.pioneer_back.common.entity.UserProfileImage;
 import yun.pioneer_back.common.exception.CustomException;
 import yun.pioneer_back.common.exception.CustomExceptionCode;
 import yun.pioneer_back.common.repository.UserRepository;
@@ -306,6 +307,20 @@ public class UserService
                 .exp(user.getExp())
                 .requiredExp(levelUtil.getRequiredExp(user.getLevel()))
                 .build();
+    }
+
+    // 프로필 이미지 변경
+    @Transactional
+    public void updateProfileImage(User user, UpdateProfileImageReqDto reqDto)
+    {
+        // 프로필 이미지에 해당하는 enum 조회
+        UserProfileImage userProfileImage = UserProfileImage.valueOf(reqDto.getProfileImage());
+
+        // 프로필 이미지 변경
+        if(!user.getProfileImage().equals(userProfileImage)) {
+            user.updateProfileImage(userProfileImage);
+            userRepository.save(user);
+        }
     }
 
     // 닉네임 변경
