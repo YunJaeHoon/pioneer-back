@@ -23,6 +23,12 @@ public class User extends BaseEntity
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 주 무기
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "main_weapon")
+    private Weapon mainWeapon;
+
     // 이메일
     @NotNull
     @Email
