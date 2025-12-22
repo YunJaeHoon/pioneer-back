@@ -1,8 +1,8 @@
-package yun.pioneer_back.common.repository;
+package yun.pioneer_back.common.repository.rdbms;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import yun.pioneer_back.common.entity.User;
+import yun.pioneer_back.common.entity.rdbms.User;
 
 import java.util.Optional;
 

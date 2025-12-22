@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import yun.pioneer_back.common.entity.User;
+import yun.pioneer_back.common.entity.rdbms.User;
 
 import java.util.Collection;
 import java.util.Collections;

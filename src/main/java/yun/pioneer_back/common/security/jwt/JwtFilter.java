@@ -10,8 +10,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import yun.pioneer_back.common.entity.User;
-import yun.pioneer_back.common.repository.UserRepository;
+import yun.pioneer_back.common.entity.rdbms.User;
+import yun.pioneer_back.common.repository.rdbms.UserRepository;
 import yun.pioneer_back.common.security.CustomUserDetailsService;
 
 import java.io.IOException;

@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import yun.pioneer_back.common.entity.User;
+import yun.pioneer_back.common.entity.rdbms.User;
 import yun.pioneer_back.common.response.SuccessResponseDto;
 import yun.pioneer_back.common.security.CustomUserDetails;
 import yun.pioneer_back.domain.user.dto.*;
