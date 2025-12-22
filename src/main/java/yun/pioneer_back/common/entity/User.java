@@ -27,7 +27,7 @@ public class User extends BaseEntity
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "main_weapon")
-    private OwnWeapon mainWeapon;
+    private Weapon mainWeapon;
 
     // 이메일
     @NotNull
@@ -88,5 +88,10 @@ public class User extends BaseEntity
     // 프로필 이미지 변경
     public void updateProfileImage(UserProfileImage profileImage) {
         this.profileImage = profileImage;
+    }
+
+    // 주 무기 변경
+    public void updateMainWeapon(Weapon weapon) {
+        this.mainWeapon = weapon;
     }
 }
