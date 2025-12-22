@@ -7,12 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import yun.pioneer_back.common.entity.User;
-import yun.pioneer_back.common.entity.UserProfileImage;
+import yun.pioneer_back.common.entity.*;
 import yun.pioneer_back.common.exception.CustomException;
 import yun.pioneer_back.common.exception.CustomExceptionCode;
+import yun.pioneer_back.common.repository.OwnWeaponRepository;
 import yun.pioneer_back.common.repository.UserRepository;
-import yun.pioneer_back.common.entity.UserRole;
+import yun.pioneer_back.common.repository.WeaponRepository;
 import yun.pioneer_back.common.security.jwt.TokenService;
 import yun.pioneer_back.common.security.jwt.TokenType;
 import yun.pioneer_back.common.util.EmailUtil;
@@ -31,6 +31,8 @@ import java.util.regex.Pattern;
 public class UserService
 {
     private final UserRepository userRepository;
+    private final WeaponRepository weaponRepository;
+    private final OwnWeaponRepository ownWeaponRepository;
 
     private final EmailUtil emailUtil;
     private final RedisUtil redisUtil;
@@ -183,8 +185,12 @@ public class UserService
             throw new CustomException(CustomExceptionCode.ALREADY_USED_NICKNAME, reqDto.getNickname());
         }
 
+        // 기본 무기 조회
+        Weapon basicWeapon = weaponRepository.findBasicWeapon();
+
         // 사용자 정보 생성
         User user = User.builder()
+                .mainWeapon(basicWeapon)
                 .email(reqDto.getEmail())
                 .password(bCryptPasswordEncoder.encode(reqDto.getPassword()))
                 .nickname(reqDto.getNickname())
@@ -194,6 +200,15 @@ public class UserService
 
         // 사용자 정보 저장
         userRepository.save(user);
+
+        // 기본 무기 소유 정보 생성
+        OwnWeapon ownWeapon = OwnWeapon.builder()
+                .owner(user)
+                .weapon(basicWeapon)
+                .build();
+
+        // 기본 무기 소유 정보 저장
+        ownWeaponRepository.save(ownWeapon);
     }
 
     // 비밀번호 초기화

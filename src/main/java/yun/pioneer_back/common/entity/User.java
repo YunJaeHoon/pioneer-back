@@ -89,4 +89,9 @@ public class User extends BaseEntity
     public void updateProfileImage(UserProfileImage profileImage) {
         this.profileImage = profileImage;
     }
+
+    // 주 무기 변경
+    public void updateMainWeapon(Weapon weapon) {
+        this.mainWeapon = weapon;
+    }
 }
