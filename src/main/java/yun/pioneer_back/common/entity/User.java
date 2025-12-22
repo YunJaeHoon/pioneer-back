@@ -27,7 +27,7 @@ public class User extends BaseEntity
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "main_weapon")
-    private Weapon mainWeapon;
+    private OwnWeapon mainWeapon;
 
     // 이메일
     @NotNull
