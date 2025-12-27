@@ -22,6 +22,7 @@ public enum CustomExceptionCode
 
     // Redis
     REDIS_OPERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 작업 수행 중 에러가 발생하였습니다."),
+    REDISSON_OPERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 분산 락 관련 작업 수행 중 에러가 발생하였습니다."),
 
     // User 관련
     LOGIN_FAILED(HttpStatus.BAD_REQUEST, "로그인에 실패하였습니다."),
