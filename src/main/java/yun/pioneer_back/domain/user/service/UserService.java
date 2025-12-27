@@ -48,7 +48,7 @@ public class UserService
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     // 이메일 인증번호 확인 정보를 저장할 redis key의 접두사
-    private final String REDIS_PREFIX_EMAIL_VERIFICATION_CODE = getenv().get("REDIS_PREFIX_EMAIL_VERIFICATION_CODE");
+    private final String REDIS_PREFIX_EMAIL_VERIFICATION_CODE = getenv("REDIS_PREFIX_EMAIL_VERIFICATION_CODE");
 
     // 8~20 글자, (영문, 숫자, 특수문자)를 모두 포함
     private final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?])[A-Za-z\\d!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]{8,20}$";
