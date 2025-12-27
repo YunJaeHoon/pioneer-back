@@ -8,21 +8,28 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-public class FightMatchConfig implements WebSocketMessageBrokerConfigurer
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer
 {
     // WebSocket 연결 설정
     @Override
     public void registerStompEndpoints(StompEndpointRegistry stompEndpointRegistry)
     {
-        stompEndpointRegistry.addEndpoint("/fight")
+        stompEndpointRegistry.addEndpoint("/ws")
+                .setAllowedOrigins("*")
                 .withSockJS();
     }
 
-    // WebSocket 메시지 발행/구독 엔드포인트 설정
+    // WebSocket 메시지 엔드포인트 설정
     @Override
     public void configureMessageBroker(MessageBrokerRegistry messageBrokerRegistry)
     {
+        // 발행 엔드포인트
         messageBrokerRegistry.setApplicationDestinationPrefixes("/pub");
+
+        // 구독 엔드포인트
         messageBrokerRegistry.enableSimpleBroker("/sub");
+
+        // 개인 메시지 엔드포인트
+        messageBrokerRegistry.setUserDestinationPrefix("/user");
     }
 }
