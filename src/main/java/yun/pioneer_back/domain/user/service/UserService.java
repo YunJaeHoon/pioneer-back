@@ -56,7 +56,7 @@ public class UserService
     // 2~12 글자, (영문, 한글, 숫자)만 허용
     private final String NICKNAME_REGEX = "^[A-Za-z0-9가-힣]{2,12}$";
 
-    /// Service
+    /// ============ service ============
 
     // 이메일 인증번호 전송
     @Transactional
@@ -86,7 +86,7 @@ public class UserService
             String verificationCode = String.format("%08d", number);
 
             // Redis에 <이메일, 인증번호> 데이터 저장
-            redisUtil.set(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail(), verificationCode, Duration.ofMinutes(10));
+            redisUtil.valueAdd(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail(), verificationCode, Duration.ofMinutes(10));
 
             // 이메일 전송
             emailUtil.sendEmail(
@@ -111,7 +111,7 @@ public class UserService
     public void checkVerificationCode(CheckVerificationCodeReqDto reqDto, HttpServletResponse response)
     {
         // Redis에서 인증번호 조회
-        Object verificationCodeValue = redisUtil.get(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail());
+        Object verificationCodeValue = redisUtil.valueGet(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail());
 
         // 인증번호 데이터가 존재하지 않는다면, 인증번호 만료 예외 처리
         if(verificationCodeValue == null) {
@@ -125,7 +125,7 @@ public class UserService
         if(!verificationCode.equals(reqDto.getVerificationCode()))
         {
             // 인증번호 데이터 삭제
-            redisUtil.delete(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail());
+            redisUtil.valueDelete(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail());
 
             // 예외 처리
             throw new CustomException(CustomExceptionCode.WRONG_VERIFICATION_CODE, null);
@@ -403,7 +403,7 @@ public class UserService
         response.addCookie(refreshTokenCookie);
     }
 
-    /// ETC
+    /// ============ record ============
 
     // 이메일 인증 토큰 발급 시, 포함될 페이로드
     @Builder
