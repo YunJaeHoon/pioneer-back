@@ -65,6 +65,9 @@ dependencies {
 
 	// SockJS
 	implementation 'org.webjars:sockjs-client:1.5.1'
+
+	// Redisson (분산 락)
+	implementation 'org.redisson:redisson-spring-boot-starter:4.0.0'
 }
 
 tasks.named('test') {
