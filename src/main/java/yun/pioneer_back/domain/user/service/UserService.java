@@ -47,8 +47,8 @@ public class UserService
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    // 이메일 인증번호 redis 접두사
-    private final String EMAIL_VERIFICATION_CODE_REDIS_PREFIX = getenv().get("EMAIL_VERIFICATION_CODE_REDIS_PREFIX");
+    // 이메일 인증번호 확인 정보를 저장할 redis key의 접두사
+    private final String REDIS_PREFIX_EMAIL_VERIFICATION_CODE = getenv().get("REDIS_PREFIX_EMAIL_VERIFICATION_CODE");
 
     // 8~20 글자, (영문, 숫자, 특수문자)를 모두 포함
     private final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?])[A-Za-z\\d!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]{8,20}$";
@@ -86,7 +86,7 @@ public class UserService
             String verificationCode = String.format("%08d", number);
 
             // Redis에 <이메일, 인증번호> 데이터 저장
-            redisUtil.valueAdd(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail(), verificationCode, Duration.ofMinutes(10));
+            redisUtil.valueAdd(emailVerificationCodeKey(reqDto.getEmail()), verificationCode, Duration.ofMinutes(10));
 
             // 이메일 전송
             emailUtil.sendEmail(
@@ -111,7 +111,7 @@ public class UserService
     public void checkVerificationCode(CheckVerificationCodeReqDto reqDto, HttpServletResponse response)
     {
         // Redis에서 인증번호 조회
-        Object verificationCodeValue = redisUtil.valueGet(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail());
+        Object verificationCodeValue = redisUtil.valueGet(emailVerificationCodeKey(reqDto.getEmail()));
 
         // 인증번호 데이터가 존재하지 않는다면, 인증번호 만료 예외 처리
         if(verificationCodeValue == null) {
@@ -125,7 +125,7 @@ public class UserService
         if(!verificationCode.equals(reqDto.getVerificationCode()))
         {
             // 인증번호 데이터 삭제
-            redisUtil.valueDelete(EMAIL_VERIFICATION_CODE_REDIS_PREFIX + reqDto.getEmail());
+            redisUtil.valueDelete(emailVerificationCodeKey(reqDto.getEmail()));
 
             // 예외 처리
             throw new CustomException(CustomExceptionCode.WRONG_VERIFICATION_CODE, null);
@@ -407,5 +407,12 @@ public class UserService
 
     // 이메일 인증 토큰 발급 시, 포함될 페이로드
     @Builder
-    public record EmailVerificationTokenPayload(String email) implements TokenPayload {}
+    private record EmailVerificationTokenPayload(String email) implements TokenPayload {}
+
+    /// ============ util ============
+
+    // 이메일 인증번호 확인 정보를 저장할 redis key
+    private String emailVerificationCodeKey(String email) {
+        return REDIS_PREFIX_EMAIL_VERIFICATION_CODE + email;
+    }
 }
