@@ -17,6 +17,7 @@ import yun.pioneer_back.common.util.RedisUtil;
 import yun.pioneer_back.domain.fight.dto.message.FightWebSocketMessage;
 import yun.pioneer_back.domain.fight.dto.message.details.MatchFoundDetails;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -85,97 +86,119 @@ public class MatchService
 
         try {
             // 분산 락 획득 시도
-            isAcquired = lock.tryLock(0, 10, TimeUnit.SECONDS);
+            isAcquired = lock.tryLock(0, 30, TimeUnit.SECONDS);
             if(!isAcquired) return;
 
-            // 큐에서 2명 pop
-            Set<Object> userIdSet = redisUtil.zsetGet(REDIS_KEY_MATCH_WAITING_QUEUE, false, 0, 1);
-            List<Long> userIdList = userIdSet.stream()
-                    .map(userId -> Long.valueOf(userId.toString()))
-                    .toList();
+            // 선택된 2명이 들어갈 유저 및 score 리스트
+            List<User> selectedUserList = new ArrayList<>();
+            List<Double> selectedUserScoreList = new ArrayList<>();
 
-            // 2명 미만이라면 종료
-            if(userIdList.size() < 2) {
-                return;
+            // 2명이 선택될 때까지 반복
+            while(selectedUserList.size() != 2)
+            {
+                // 큐에서 1명 꺼내기
+                Set<Object> userIdSet = redisUtil.zsetGet(REDIS_KEY_MATCH_WAITING_QUEUE, false, 0, 0);
+
+                // 큐에 아무도 없다면 종료
+                if(userIdSet.isEmpty()) {
+                    break;
+                }
+
+                // 유저 ID 조회
+                Long userId = Long.valueOf(userIdSet.iterator().next().toString());
+
+                // score 조회
+                // 조회가 안된다면 큐에서 제거하고 continue
+                Double scoreObj = redisUtil.zsetGetScore(REDIS_KEY_MATCH_WAITING_QUEUE, userId);
+                if (scoreObj == null) {
+                    redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userId);
+                    continue;
+                }
+                double score = scoreObj;
+
+                // 큐에서 제거
+                redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userId);
+
+                // 유저 매칭 상태 조회
+                Object userMatchStateRaw = redisUtil.valueGet(fightMatchUserStateKey(userId));
+                MatchState userMatchState = (userMatchStateRaw == null) ?
+                        MatchState.IDLE :
+                        MatchState.valueOf(userMatchStateRaw.toString());
+
+                // "매칭 대기" 상태가 아니라면 continue
+                if(!MatchState.WAITING.equals(userMatchState)) {
+                    continue;
+                }
+
+                // 유저 조회 및 선택된 유저 리스트에 포함
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new CustomException(CustomExceptionCode.USER_NOT_FOUND, userId));
+                selectedUserList.add(user);
+
+                // 유저 score 리스트에 해당 유저의 score 포함
+                selectedUserScoreList.add(score);
             }
 
-            // 유저 ID 조회
-            Long userAId = userIdList.get(0);
-            Long userBId = userIdList.get(1);
-
-            // 매칭 상태 조회
-            Object userAMatchStateRaw = redisUtil.valueGet(fightMatchUserStateKey(userAId));
-            Object userBMatchStateRaw = redisUtil.valueGet(fightMatchUserStateKey(userBId));
-
-            MatchState userAmatchState = (userAMatchStateRaw == null) ?
-                    MatchState.IDLE :
-                    MatchState.valueOf(userAMatchStateRaw.toString());
-            MatchState userBmatchState = (userBMatchStateRaw == null) ?
-                    MatchState.IDLE :
-                    MatchState.valueOf(userBMatchStateRaw.toString());
-
-            // 둘 중 한 명이라도 "매칭 대기" 상태가 아니라면 종료
-            if(!MatchState.WAITING.equals(userAmatchState)) {
-                redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userAId);
-                return;
+            // 선택된 유저가 2명 미만이라면 다시 큐에 넣기
+            if(selectedUserList.size() < 2)
+            {
+                for(int i = 0; i < selectedUserList.size(); i++)
+                {
+                    redisUtil.zsetAdd(
+                            REDIS_KEY_MATCH_WAITING_QUEUE,
+                            selectedUserList.get(i).getId(),
+                            selectedUserScoreList.get(i)
+                    );
+                }
             }
-            if(!MatchState.WAITING.equals(userBmatchState)) {
-                redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userBId);
-                return;
+            else
+            {
+                User userA = selectedUserList.get(0);
+                User userB = selectedUserList.get(1);
+
+                // 결투 세션 생성 및 저장
+                FightSession fightSession = FightSession.create(userA, userB);
+                fightSessionRepository.save(fightSession);
+
+                // 방 UUID 조회
+                String roomId = fightSession.getRoomId();
+
+                // 유저 매칭 상태를 "매칭 완료"로 변경
+                redisUtil.valueAdd(fightMatchUserStateKey(userA.getId()), MatchState.MATCHED);
+                redisUtil.valueAdd(fightMatchUserStateKey(userB.getId()), MatchState.MATCHED);
+
+                // 유저가 매칭된 방 UUID 갱신
+                redisUtil.valueAdd(fightMatchRoomIdKey(userA.getId()), roomId);
+                redisUtil.valueAdd(fightMatchRoomIdKey(userB.getId()), roomId);
+
+                // 매칭 완료 WebSocket 메시지 전송
+                messagingTemplate.convertAndSendToUser(
+                        userA.getId().toString(),
+                        "/sub/match",
+                        FightWebSocketMessage.create(
+                                MatchFoundDetails.builder()
+                                        .roomId(roomId)
+                                        .myUserId(userA.getId())
+                                        .myNickname(userA.getNickname())
+                                        .opponentUserId(userB.getId())
+                                        .opponentNickname(userB.getNickname())
+                                        .build()
+                        )
+                );
+                messagingTemplate.convertAndSendToUser(
+                        userB.getId().toString(),
+                        "/sub/match",
+                        FightWebSocketMessage.create(
+                                MatchFoundDetails.builder()
+                                        .roomId(roomId)
+                                        .myUserId(userB.getId())
+                                        .myNickname(userB.getNickname())
+                                        .opponentUserId(userA.getId())
+                                        .opponentNickname(userA.getNickname())
+                                        .build()
+                        )
+                );
             }
-
-            // 유저 조회
-            User userA = userRepository.findById(userAId)
-                    .orElseThrow(() -> new CustomException(CustomExceptionCode.USER_NOT_FOUND, userAId));
-            User userB = userRepository.findById(userBId)
-                    .orElseThrow(() -> new CustomException(CustomExceptionCode.USER_NOT_FOUND, userBId));
-
-            // 결투 세션 생성 및 저장
-            FightSession fightSession = FightSession.create(userA, userB);
-            fightSessionRepository.save(fightSession);
-
-            // 방 UUID 조회
-            String roomId = fightSession.getRoomId();
-
-            // 유저 매칭 상태를 "매칭 완료"로 변경
-            redisUtil.valueAdd(fightMatchUserStateKey(userAId), MatchState.MATCHED);
-            redisUtil.valueAdd(fightMatchUserStateKey(userBId), MatchState.MATCHED);
-
-            // 유저가 매칭된 방 UUID 갱신
-            redisUtil.valueAdd(fightMatchRoomIdKey(userAId), roomId);
-            redisUtil.valueAdd(fightMatchRoomIdKey(userBId), roomId);
-
-            // 매칭 완료 WebSocket 메시지 전송
-            messagingTemplate.convertAndSendToUser(
-                    userAId.toString(),
-                    "/sub/match",
-                    FightWebSocketMessage.create(
-                            MatchFoundDetails.builder()
-                                    .roomId(roomId)
-                                    .myUserId(userAId)
-                                    .myNickname(userA.getNickname())
-                                    .opponentUserId(userBId)
-                                    .opponentNickname(userB.getNickname())
-                                    .build()
-                    )
-            );
-            messagingTemplate.convertAndSendToUser(
-                    userBId.toString(),
-                    "/sub/match",
-                    FightWebSocketMessage.create(
-                            MatchFoundDetails.builder()
-                                    .roomId(roomId)
-                                    .myUserId(userBId)
-                                    .myNickname(userB.getNickname())
-                                    .opponentUserId(userAId)
-                                    .opponentNickname(userA.getNickname())
-                                    .build()
-                    )
-            );
-
-            // 큐에서 해당 유저들 데이터 제거
-            redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userAId);
-            redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userBId);
 
         } catch(Exception e) {
             throw new CustomException(CustomExceptionCode.REDISSON_OPERATION_ERROR, e.getMessage());

@@ -78,6 +78,13 @@ public class RedisUtil
                 redisTemplate.opsForZSet().range(key, start, end);
     }
 
+    // score 조회
+    @Transactional(readOnly = true)
+    public Double zsetGetScore(String key, Object value)
+    {
+        return redisTemplate.opsForZSet().score(key, value);
+    }
+
     // 데이터 삭제 (key 자체 삭제)
     @Transactional
     public void zsetDelete(String key) {
