@@ -66,6 +66,13 @@ public class SecurityConfig
         httpSecurity
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
+        // 경로 권한 설정
+        httpSecurity
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/ws/**").permitAll()
+                        .anyRequest().permitAll()
+                );
+
         // 일반 로그인 설정
         httpSecurity
                 .formLogin(loginConfig -> loginConfig

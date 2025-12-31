@@ -1,4 +1,4 @@
-package yun.pioneer_back.common.entity;
+package yun.pioneer_back.common.entity.rdbms;
 
 import lombok.AllArgsConstructor;
 

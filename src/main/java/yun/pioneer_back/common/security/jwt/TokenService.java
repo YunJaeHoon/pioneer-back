@@ -1,5 +1,7 @@
 package yun.pioneer_back.common.security.jwt;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -8,8 +10,6 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import yun.pioneer_back.common.exception.CustomException;
-import yun.pioneer_back.common.exception.CustomExceptionCode;
 
 import java.security.Key;
 import java.time.ZonedDateTime;
@@ -20,23 +20,29 @@ import java.util.Map;
 public class TokenService
 {
     private final Key key;
+    private final ObjectMapper objectMapper;
 
-    public TokenService(@Value("${JWT_SIGNATURE_SECRET_KEY}") String secret)
+    public TokenService(@Value("${JWT_SIGNATURE_SECRET_KEY}") String secret, ObjectMapper objectMapper)
     {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         this.key = Keys.hmacShaKeyFor(keyBytes);
+        this.objectMapper = objectMapper;
     }
 
     // 토큰 생성
-    public String createToken(TokenType tokenType, Map<String, Object> claimsMap)
-    {
+    public <T extends TokenPayload> String createToken(
+            TokenType tokenType,
+            T payload
+    ) {
         Claims claims = Jwts.claims();
 
-        // 사용자 정의 클레임 추가
-        if (claimsMap != null) {
-            claims.putAll(claimsMap);
+        // 페이로드 포함
+        if (payload != null) {
+            Map<String, Object> payloadMap = objectMapper.convertValue(payload, new TypeReference<>() {});
+            claims.putAll(payloadMap);
         }
 
+        // 만료 시간 설정
         ZonedDateTime now = ZonedDateTime.now();
         ZonedDateTime expiredAt = now.plusSeconds(tokenType.getTtl());
 
@@ -47,6 +53,21 @@ public class TokenService
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+
+    // 토큰으로부터 페이로드 추출
+    public <T extends TokenPayload> T getPayload(
+            String token,
+            Class<T> payloadClass
+    ) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return objectMapper.convertValue(claims, payloadClass);
+    }
+
 
     // 토큰을 쿠키로 변환
     public Cookie parseTokenToCookie(String token, TokenType tokenType)
@@ -70,19 +91,6 @@ public class TokenService
             return true;
         } catch (Exception e) {
             return false;
-        }
-    }
-
-    // 사용자 정의 클레임 추출
-    public <T> T getClaims(String token, String claimsKey, Class<T> requiredType)
-    {
-        // 클레임 추출
-        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-
-        if(claims.containsKey(claimsKey)) {
-            return claims.get(claimsKey, requiredType);
-        } else {
-            throw new CustomException(CustomExceptionCode.CLAIMS_NOT_FOUND, claimsKey);
         }
     }
 

@@ -2,17 +2,20 @@ package yun.pioneer_back.domain.user.service;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import yun.pioneer_back.common.entity.*;
+import yun.pioneer_back.common.entity.rdbms.*;
 import yun.pioneer_back.common.exception.CustomException;
 import yun.pioneer_back.common.exception.CustomExceptionCode;
-import yun.pioneer_back.common.repository.OwnWeaponRepository;
-import yun.pioneer_back.common.repository.UserRepository;
-import yun.pioneer_back.common.repository.WeaponRepository;
+import yun.pioneer_back.common.repository.rdbms.OwnWeaponRepository;
+import yun.pioneer_back.common.repository.rdbms.UserRepository;
+import yun.pioneer_back.common.repository.rdbms.WeaponRepository;
+import yun.pioneer_back.common.security.handler.LoginSuccessHandler;
+import yun.pioneer_back.common.security.jwt.TokenPayload;
 import yun.pioneer_back.common.security.jwt.TokenService;
 import yun.pioneer_back.common.security.jwt.TokenType;
 import yun.pioneer_back.common.util.EmailUtil;
@@ -24,6 +27,8 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import static java.lang.System.getenv;
 
 @Slf4j
 @Service
@@ -42,17 +47,16 @@ public class UserService
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    // 이메일 인증번호 확인 정보를 저장할 redis key의 접두사
+    private final String REDIS_PREFIX_EMAIL_VERIFICATION_CODE = getenv("REDIS_PREFIX_EMAIL_VERIFICATION_CODE");
+
     // 8~20 글자, (영문, 숫자, 특수문자)를 모두 포함
     private final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?])[A-Za-z\\d!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]{8,20}$";
 
     // 2~12 글자, (영문, 한글, 숫자)만 허용
     private final String NICKNAME_REGEX = "^[A-Za-z0-9가-힣]{2,12}$";
 
-    // 비밀번호 허용 영문, 숫자, 특수문자
-    private static final String PASSWORD_POSSIBLE_ENGLISH = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    private static final String PASSWORD_POSSIBLE_NUMBER = "0123456789";
-    private static final String PASSWORD_POSSIBLE_SPECIAL = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?";
-    private static final String PASSWORD_ALL_POSSIBLE_LETTERS = PASSWORD_POSSIBLE_ENGLISH + PASSWORD_POSSIBLE_NUMBER + PASSWORD_POSSIBLE_SPECIAL;
+    /// ============ service ============
 
     // 이메일 인증번호 전송
     @Transactional
@@ -82,7 +86,7 @@ public class UserService
             String verificationCode = String.format("%08d", number);
 
             // Redis에 <이메일, 인증번호> 데이터 저장
-            redisUtil.set("email:verification_code:" + reqDto.getEmail(), verificationCode, Duration.ofMinutes(10));
+            redisUtil.addValue(emailVerificationCodeKey(reqDto.getEmail()), verificationCode, Duration.ofMinutes(10));
 
             // 이메일 전송
             emailUtil.sendEmail(
@@ -107,7 +111,7 @@ public class UserService
     public void checkVerificationCode(CheckVerificationCodeReqDto reqDto, HttpServletResponse response)
     {
         // Redis에서 인증번호 조회
-        Object verificationCodeValue = redisUtil.get("email:verification_code:" + reqDto.getEmail());
+        Object verificationCodeValue = redisUtil.getValue(emailVerificationCodeKey(reqDto.getEmail()));
 
         // 인증번호 데이터가 존재하지 않는다면, 인증번호 만료 예외 처리
         if(verificationCodeValue == null) {
@@ -121,7 +125,7 @@ public class UserService
         if(!verificationCode.equals(reqDto.getVerificationCode()))
         {
             // 인증번호 데이터 삭제
-            redisUtil.delete("email:verification_code:" + reqDto.getEmail());
+            redisUtil.deleteValue(emailVerificationCodeKey(reqDto.getEmail()));
 
             // 예외 처리
             throw new CustomException(CustomExceptionCode.WRONG_VERIFICATION_CODE, null);
@@ -130,7 +134,9 @@ public class UserService
         // 이메일 인증 토큰 발급
         String verificationToken = tokenService.createToken(
                 TokenType.EMAIL_VERIFICATION_TOKEN,
-                Map.of("email", reqDto.getEmail())
+                EmailVerificationTokenPayload.builder()
+                        .email(reqDto.getEmail())
+                        .build()
         );
 
         // 토큰을 쿠키로 변환
@@ -157,8 +163,14 @@ public class UserService
         // 이메일 인증 토큰 검증
         tokenService.checkToken(verificationToken);
 
-        // 이메일 인증 토큰 내의 이메일 정보 추출
-        String verifiedEmail = tokenService.getClaims(verificationToken, "email", String.class);
+        // 이메일 인증 토큰 페이로드 추출
+        EmailVerificationTokenPayload emailVerificationTokenPayload = tokenService.getPayload(
+                verificationToken,
+                EmailVerificationTokenPayload.class
+        );
+
+        // 이메일 인증 토큰 페이로드 내의 이메일 추출
+        String verifiedEmail = emailVerificationTokenPayload.email();
 
         // 이메일 인증 여부 확인
         if(!verifiedEmail.equals(reqDto.getEmail())) {
@@ -224,6 +236,12 @@ public class UserService
             // 새로운 비밀번호 생성
             SecureRandom random = new SecureRandom();
             List<Character> newPasswordList = new ArrayList<>();
+
+            // 비밀번호 허용 영문, 숫자, 특수문자
+            final String PASSWORD_POSSIBLE_ENGLISH = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            final String PASSWORD_POSSIBLE_NUMBER = "0123456789";
+            final String PASSWORD_POSSIBLE_SPECIAL = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?";
+            final String PASSWORD_ALL_POSSIBLE_LETTERS = PASSWORD_POSSIBLE_ENGLISH + PASSWORD_POSSIBLE_NUMBER + PASSWORD_POSSIBLE_SPECIAL;
 
             // 영문, 숫자, 특수문자를 최소 1개씩 포함
             newPasswordList.add(PASSWORD_POSSIBLE_ENGLISH.charAt(random.nextInt(PASSWORD_POSSIBLE_ENGLISH.length())));
@@ -291,8 +309,16 @@ public class UserService
             throw new CustomException(CustomExceptionCode.INVALID_REFRESH_TOKEN, null);
         }
 
-        // refresh token에서 사용자 정보 추출
-        Long userId = tokenService.getClaims(refreshToken, "userId", Long.class);
+        // refresh token 페이로드 추출
+        LoginSuccessHandler.AuthenticationTokenPayload authenticationTokenPayload = tokenService.getPayload(
+                refreshToken,
+                LoginSuccessHandler.AuthenticationTokenPayload.class
+        );
+
+        // refresh token 페이로드 내의 유저 ID 추출
+        Long userId = authenticationTokenPayload.userId();
+
+        // 유저 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomExceptionCode.USER_NOT_FOUND, null));
 
@@ -302,7 +328,12 @@ public class UserService
         }
 
         // access token 발급
-        String accessToken = tokenService.createToken(TokenType.ACCESS_TOKEN, Map.of("userId", user.getId()));
+        String accessToken = tokenService.createToken(
+                TokenType.ACCESS_TOKEN,
+                LoginSuccessHandler.AuthenticationTokenPayload.builder()
+                        .userId(user.getId())
+                        .build()
+        );
 
         // 토큰을 쿠키로 변환
         Cookie accessTokenCookie = tokenService.parseTokenToCookie(accessToken, TokenType.ACCESS_TOKEN);
@@ -370,5 +401,18 @@ public class UserService
         // 쿠키를 응답에 포함
         response.addCookie(accessTokenCookie);
         response.addCookie(refreshTokenCookie);
+    }
+
+    /// ============ record ============
+
+    // 이메일 인증 토큰 발급 시, 포함될 페이로드
+    @Builder
+    private record EmailVerificationTokenPayload(String email) implements TokenPayload {}
+
+    /// ============ util ============
+
+    // 이메일 인증번호 확인 정보를 저장할 redis key
+    private String emailVerificationCodeKey(String email) {
+        return REDIS_PREFIX_EMAIL_VERIFICATION_CODE + email;
     }
 }

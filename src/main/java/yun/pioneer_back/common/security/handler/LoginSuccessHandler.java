@@ -4,20 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import yun.pioneer_back.common.entity.User;
-import yun.pioneer_back.common.repository.UserRepository;
+import yun.pioneer_back.common.entity.rdbms.User;
+import yun.pioneer_back.common.repository.rdbms.UserRepository;
 import yun.pioneer_back.common.response.SuccessResponseDto;
 import yun.pioneer_back.common.security.CustomUserDetails;
+import yun.pioneer_back.common.security.jwt.TokenPayload;
 import yun.pioneer_back.common.security.jwt.TokenService;
 import yun.pioneer_back.common.security.jwt.TokenType;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -36,8 +37,18 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler
         User user = userDetails.getUser();
 
         // access token 및 refresh token 발급
-        String accessToken = tokenService.createToken(TokenType.ACCESS_TOKEN, Map.of("userId", user.getId()));
-        String refreshToken = tokenService.createToken(TokenType.REFRESH_TOKEN, Map.of("userId", user.getId()));
+        String accessToken = tokenService.createToken(
+                TokenType.ACCESS_TOKEN,
+                AuthenticationTokenPayload.builder()
+                        .userId(user.getId())
+                        .build()
+        );
+        String refreshToken = tokenService.createToken(
+                TokenType.REFRESH_TOKEN,
+                AuthenticationTokenPayload.builder()
+                        .userId(user.getId())
+                        .build()
+        );
 
         // 사용자 refresh token 정보 입력
         user.renewRefreshToken(refreshToken);
@@ -61,4 +72,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler
         response.getWriter().write(objectMapper.writeValueAsString(responseDto));
         response.getWriter().flush();
     }
+
+    // 토큰 발급 시, 포함될 페이로드
+    @Builder
+    public record AuthenticationTokenPayload(Long userId) implements TokenPayload {}
 }

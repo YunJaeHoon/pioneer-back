@@ -10,9 +10,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import yun.pioneer_back.common.entity.User;
-import yun.pioneer_back.common.repository.UserRepository;
+import yun.pioneer_back.common.entity.rdbms.User;
+import yun.pioneer_back.common.repository.rdbms.UserRepository;
 import yun.pioneer_back.common.security.CustomUserDetailsService;
+import yun.pioneer_back.common.security.handler.LoginSuccessHandler;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -38,7 +39,16 @@ public class JwtFilter extends OncePerRequestFilter
             // 토큰이 유효한지 체크
             if(tokenService.checkToken(accessToken))
             {
-                Long userId = tokenService.getClaims(accessToken, "userId", Long.class);
+                // access token 페이로드 추출
+                LoginSuccessHandler.AuthenticationTokenPayload authenticationTokenPayload = tokenService.getPayload(
+                        accessToken,
+                        LoginSuccessHandler.AuthenticationTokenPayload.class
+                );
+
+                // access token 페이로드 내의 유저 ID 추출
+                Long userId = authenticationTokenPayload.userId();
+
+                // 유저 조회
                 Optional<User> userOptional = userRepository.findById(userId);
 
                 // 존재하는 계정인지 체크

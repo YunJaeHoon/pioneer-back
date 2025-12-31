@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Match WS Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h3>Match WS Test</h3>
+
+<div>
+    <label>Access Token (JWT):</label><br/>
+    <input id="token" style="width: 700px" placeholder="Bearer 없이 토큰만"/>
+</div>
+
+<div style="margin-top: 10px;">
+    <button onclick="connect()">1) Connect</button>
+    <button onclick="subscribeMatch()">2) Subscribe /user/sub/match</button>
+    <button onclick="requestMatch()">3) POST /api/match/request</button>
+</div>
+
+<pre id="log" style="margin-top: 15px; background:#111; color:#0f0; padding:10px; height: 400px; overflow:auto;"></pre>
+
+<script>
+    let stompClient = null;
+
+    function log(msg) {
+        const el = document.getElementById("log");
+        el.textContent += msg + "\n";
+        el.scrollTop = el.scrollHeight;
+    }
+
+    function connect()
+    {
+        const sock = new SockJS("/ws");
+        stompClient = Stomp.over(sock);
+        stompClient.debug = (s) => log("[STOMP] " + s);
+
+        const token = document.getElementById("token").value.trim();
+        const headers = token ? { Authorization: "Bearer " + token } : {};
+        stompClient.connect(headers, () => log("✅ connected"), (e) => log("❌ connect error: " + e));
+    }
+
+    function subscribeMatch()
+    {
+        if (!stompClient) return log("connect 먼저 하세요");
+        stompClient.subscribe("/user/sub/match", (msg) => {
+            log("📩 user/sub/match: " + msg.body);
+        });
+        log("✅ subscribed user/sub/match");
+    }
+
+    async function requestMatch() {
+        const token = document.getElementById("token").value.trim();
+        const res = await fetch("/api/match/request", {
+            method: "POST",
+            headers: token ? { "Authorization": "Bearer " + token } : {}
+        });
+        log("POST api/match/request -> " + res.status + " " + await res.text());
+    }
+</script>
+</body>
+</html>

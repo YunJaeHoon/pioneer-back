@@ -56,6 +56,18 @@ dependencies {
 
 	// 이메일
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	// WebSocket
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// STOMP
+	implementation 'org.webjars:stomp-websocket:2.3.4'
+
+	// SockJS
+	implementation 'org.webjars:sockjs-client:1.5.1'
+
+	// Redisson (분산 락)
+	implementation 'org.redisson:redisson-spring-boot-starter:4.0.0'
 }
 
 tasks.named('test') {

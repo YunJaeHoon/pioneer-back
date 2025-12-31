@@ -1,4 +1,4 @@
-package yun.pioneer_back.common.entity;
+package yun.pioneer_back.common.entity.rdbms;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
