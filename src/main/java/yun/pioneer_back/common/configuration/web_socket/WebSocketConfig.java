@@ -1,4 +1,4 @@
-package yun.pioneer_back.common.configuration;
+package yun.pioneer_back.common.configuration.web_socket;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
