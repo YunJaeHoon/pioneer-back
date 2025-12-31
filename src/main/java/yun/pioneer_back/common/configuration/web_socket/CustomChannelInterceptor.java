@@ -8,6 +8,8 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
+import yun.pioneer_back.common.exception.CustomException;
+import yun.pioneer_back.common.exception.CustomExceptionCode;
 import yun.pioneer_back.common.security.handler.LoginSuccessHandler;
 import yun.pioneer_back.common.security.jwt.TokenService;
 
@@ -49,9 +51,13 @@ public class CustomChannelInterceptor implements ChannelInterceptor
 
                         // 유저 설정
                         accessor.setUser(userId::toString);
+
+                        return message;
                     }
                 }
             }
+        } else {
+            throw new CustomException(CustomExceptionCode.ACCESSOR_NOT_FOUND, null);
         }
 
         return message;
