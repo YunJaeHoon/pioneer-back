@@ -191,7 +191,7 @@ public class MatchService
 
                 // 매칭 완료 WebSocket 메시지 전송
                 messagingTemplate.convertAndSendToUser(
-                        userA.getEmail(),
+                        userA.getId().toString(),
                         "/sub/match",
                         FightWebSocketMessage.create(
                                 MatchFoundDetails.builder()
@@ -204,7 +204,7 @@ public class MatchService
                         )
                 );
                 messagingTemplate.convertAndSendToUser(
-                        userB.getEmail(),
+                        userB.getId().toString(),
                         "/sub/match",
                         FightWebSocketMessage.create(
                                 MatchFoundDetails.builder()
