@@ -51,7 +51,7 @@ public class MatchService
 
     /// ============ service ============
 
-    // 랜덤 매칭 시작
+    // 랜덤 매칭 요청
     @Transactional
     public void request(User user)
     {
@@ -77,7 +77,7 @@ public class MatchService
         // 유저를 매칭 대기열(ZSet)에 추가 (score : 현재 시간)
         redisUtil.addZSet(REDIS_KEY_MATCH_WAITING_QUEUE, user.getId().toString(), System.currentTimeMillis());
 
-        // 랜덤 매칭 시도 (실패했다면 매칭 상태 및 매칭 대기열 초기화)
+        // 랜덤 매칭 시도 (예외가 발생했다면 매칭 상태 및 매칭 대기열 초기화)
         try {
             tryMatch();
         } catch (Exception e) {
