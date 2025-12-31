@@ -86,7 +86,7 @@ public class UserService
             String verificationCode = String.format("%08d", number);
 
             // Redis에 <이메일, 인증번호> 데이터 저장
-            redisUtil.valueAdd(emailVerificationCodeKey(reqDto.getEmail()), verificationCode, Duration.ofMinutes(10));
+            redisUtil.addValue(emailVerificationCodeKey(reqDto.getEmail()), verificationCode, Duration.ofMinutes(10));
 
             // 이메일 전송
             emailUtil.sendEmail(
@@ -111,7 +111,7 @@ public class UserService
     public void checkVerificationCode(CheckVerificationCodeReqDto reqDto, HttpServletResponse response)
     {
         // Redis에서 인증번호 조회
-        Object verificationCodeValue = redisUtil.valueGet(emailVerificationCodeKey(reqDto.getEmail()));
+        Object verificationCodeValue = redisUtil.getValue(emailVerificationCodeKey(reqDto.getEmail()));
 
         // 인증번호 데이터가 존재하지 않는다면, 인증번호 만료 예외 처리
         if(verificationCodeValue == null) {
@@ -125,7 +125,7 @@ public class UserService
         if(!verificationCode.equals(reqDto.getVerificationCode()))
         {
             // 인증번호 데이터 삭제
-            redisUtil.valueDelete(emailVerificationCodeKey(reqDto.getEmail()));
+            redisUtil.deleteValue(emailVerificationCodeKey(reqDto.getEmail()));
 
             // 예외 처리
             throw new CustomException(CustomExceptionCode.WRONG_VERIFICATION_CODE, null);

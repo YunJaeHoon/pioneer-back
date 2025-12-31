@@ -2,6 +2,7 @@ package yun.pioneer_back.domain.fight.service;
 
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,6 +19,7 @@ import yun.pioneer_back.domain.fight.dto.message.FightWebSocketMessage;
 import yun.pioneer_back.domain.fight.dto.message.details.MatchFoundDetails;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +28,7 @@ import static java.lang.System.getenv;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MatchService
 {
     private final RedissonClient redisson;
@@ -52,32 +55,44 @@ public class MatchService
     @Transactional
     public void request(User user)
     {
-        // 매칭 상태 조회
-        String matchStateKey = fightMatchUserStateKey(user.getId());
-        Object matchStateRaw = redisUtil.valueGet(matchStateKey);
-        MatchState matchState = (matchStateRaw == null) ?
-                MatchState.IDLE :
-                MatchState.valueOf(matchStateRaw.toString());
+        log.info("api 요청!!!");
+
+        // 유저 매칭 상태 redis key
+        String userStateKey = getUserStateKey(user.getId());
+
+        // 유저 매칭 상태 조회
+        Object userStateRaw = redisUtil.getValue(userStateKey);
+        UserState userState = (userStateRaw == null) ?
+                UserState.IDLE :
+                UserState.valueOf(userStateRaw.toString());
 
         // 이미 매칭 대기 혹은 매칭 완료라면 중복 대기 방지
-        if(matchState.equals(MatchState.WAITING) || matchState.equals(MatchState.MATCHED)) {
+        if(userState.equals(UserState.WAITING) || userState.equals(UserState.MATCHED)) {
             return;
         }
 
         // 유저 매칭 상태를 "매칭 대기"로 변경
-        redisUtil.valueAdd(matchStateKey, MatchState.WAITING);
+        redisUtil.addValue(userStateKey, UserState.WAITING.name());
 
         // 유저를 매칭 대기열(ZSet)에 추가 (score : 현재 시간)
-        redisUtil.zsetAdd(REDIS_KEY_MATCH_WAITING_QUEUE, user.getId(), System.currentTimeMillis());
+        redisUtil.addZSet(REDIS_KEY_MATCH_WAITING_QUEUE, user.getId().toString(), System.currentTimeMillis());
 
-        // 랜덤 매칭 시도
-        tryMatch();
+        // 랜덤 매칭 시도 (실패했다면 매칭 상태 및 매칭 대기열 초기화)
+        try {
+            tryMatch();
+        } catch (Exception e) {
+            redisUtil.deleteValue(userStateKey);
+            redisUtil.deleteZSet(REDIS_KEY_MATCH_WAITING_QUEUE, user.getId().toString());
+
+            throw e;
+        }
     }
 
     // 랜덤 매칭 시도 (큐에서 2명을 뽑아 매치 성사)
-    @Transactional
     public void tryMatch()
     {
+        log.info("매칭 시도!!!");
+
         // 분산 락
         RLock lock = redisson.getLock(REDIS_LOCK_MATCH_WAITING_QUEUE);
 
@@ -96,11 +111,14 @@ public class MatchService
             // 2명이 선택될 때까지 반복
             while(selectedUserList.size() != 2)
             {
+                log.info("꺼내기~");
+
                 // 큐에서 1명 꺼내기
-                Set<Object> userIdSet = redisUtil.zsetGet(REDIS_KEY_MATCH_WAITING_QUEUE, false, 0, 0);
+                Set<Object> userIdSet = redisUtil.getZSet(REDIS_KEY_MATCH_WAITING_QUEUE, false, 0, 0);
 
                 // 큐에 아무도 없다면 종료
                 if(userIdSet.isEmpty()) {
+                    log.info("아무도없엉");
                     break;
                 }
 
@@ -109,24 +127,24 @@ public class MatchService
 
                 // score 조회
                 // 조회가 안된다면 큐에서 제거하고 continue
-                Double scoreObj = redisUtil.zsetGetScore(REDIS_KEY_MATCH_WAITING_QUEUE, userId);
+                Double scoreObj = redisUtil.getZSetScore(REDIS_KEY_MATCH_WAITING_QUEUE, userId.toString());
                 if (scoreObj == null) {
-                    redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userId);
+                    redisUtil.deleteZSet(REDIS_KEY_MATCH_WAITING_QUEUE, userId.toString());
                     continue;
                 }
                 double score = scoreObj;
 
                 // 큐에서 제거
-                redisUtil.zsetDelete(REDIS_KEY_MATCH_WAITING_QUEUE, userId);
+                redisUtil.deleteZSet(REDIS_KEY_MATCH_WAITING_QUEUE, userId.toString());
 
                 // 유저 매칭 상태 조회
-                Object userMatchStateRaw = redisUtil.valueGet(fightMatchUserStateKey(userId));
-                MatchState userMatchState = (userMatchStateRaw == null) ?
-                        MatchState.IDLE :
-                        MatchState.valueOf(userMatchStateRaw.toString());
+                Object userStateRaw = redisUtil.getValue(getUserStateKey(userId));
+                UserState userState = (userStateRaw == null) ?
+                        UserState.IDLE :
+                        UserState.valueOf(userStateRaw.toString());
 
                 // "매칭 대기" 상태가 아니라면 continue
-                if(!MatchState.WAITING.equals(userMatchState)) {
+                if(!UserState.WAITING.equals(userState)) {
                     continue;
                 }
 
@@ -144,9 +162,9 @@ public class MatchService
             {
                 for(int i = 0; i < selectedUserList.size(); i++)
                 {
-                    redisUtil.zsetAdd(
+                    redisUtil.addZSet(
                             REDIS_KEY_MATCH_WAITING_QUEUE,
-                            selectedUserList.get(i).getId(),
+                            selectedUserList.get(i).getId().toString(),
                             selectedUserScoreList.get(i)
                     );
                 }
@@ -164,16 +182,16 @@ public class MatchService
                 String roomId = fightSession.getRoomId();
 
                 // 유저 매칭 상태를 "매칭 완료"로 변경
-                redisUtil.valueAdd(fightMatchUserStateKey(userA.getId()), MatchState.MATCHED);
-                redisUtil.valueAdd(fightMatchUserStateKey(userB.getId()), MatchState.MATCHED);
+                redisUtil.addValue(getUserStateKey(userA.getId()), UserState.MATCHED.name());
+                redisUtil.addValue(getUserStateKey(userB.getId()), UserState.MATCHED.name());
 
                 // 유저가 매칭된 방 UUID 갱신
-                redisUtil.valueAdd(fightMatchRoomIdKey(userA.getId()), roomId);
-                redisUtil.valueAdd(fightMatchRoomIdKey(userB.getId()), roomId);
+                redisUtil.addValue(getRoomIdKey(userA.getId()), roomId);
+                redisUtil.addValue(getRoomIdKey(userB.getId()), roomId);
 
                 // 매칭 완료 WebSocket 메시지 전송
                 messagingTemplate.convertAndSendToUser(
-                        userA.getId().toString(),
+                        userA.getEmail(),
                         "/sub/match",
                         FightWebSocketMessage.create(
                                 MatchFoundDetails.builder()
@@ -186,7 +204,7 @@ public class MatchService
                         )
                 );
                 messagingTemplate.convertAndSendToUser(
-                        userB.getId().toString(),
+                        userB.getEmail(),
                         "/sub/match",
                         FightWebSocketMessage.create(
                                 MatchFoundDetails.builder()
@@ -201,7 +219,10 @@ public class MatchService
             }
 
         } catch(Exception e) {
-            throw new CustomException(CustomExceptionCode.REDISSON_OPERATION_ERROR, e.getMessage());
+            log.error(e.getMessage());
+            log.error(Arrays.toString(e.getStackTrace()));
+
+            throw new CustomException(CustomExceptionCode.REDISSON_OPERATION_ERROR, e.getMessage() + "/n" + Arrays.toString(e.getStackTrace()));
         } finally {
             // 분산 락 해제
             if (isAcquired && lock.isHeldByCurrentThread()) {
@@ -214,7 +235,7 @@ public class MatchService
 
     // 유저 매칭 상태
     @AllArgsConstructor
-    public enum MatchState
+    public enum UserState
     {
         IDLE("매칭 전"),
         WAITING("매칭 대기"),
@@ -226,12 +247,12 @@ public class MatchService
     /// ============ util ============
 
     // 유저 매칭 상태를 저장할 redis key
-    private String fightMatchUserStateKey(Long userId) {
+    private String getUserStateKey(Long userId) {
         return REDIS_PREFIX_FIGHT_MATCH_USER_STATE + userId;
     }
 
     // 유저가 매칭된 방 UUID를 저장할 redis key
-    private String fightMatchRoomIdKey(Long userId) {
+    private String getRoomIdKey(Long userId) {
         return REDIS_PREFIX_FIGHT_MATCH_ROOM_ID + userId;
     }
 }

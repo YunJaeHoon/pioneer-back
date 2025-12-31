@@ -16,11 +16,11 @@ public class RedisUtil
 {
     private final RedisTemplate<String, Object> redisTemplate;
 
-    /// ============ Value ============
+    /// ============ Value (String) ============
 
     // 데이터 저장 (유효기간 x)
     @Transactional
-    public void valueAdd(String key, Object value)
+    public void addValue(String key, String value)
     {
         ValueOperations<String, Object> ops = redisTemplate.opsForValue();
         ops.set(key, value);
@@ -28,7 +28,7 @@ public class RedisUtil
 
     // 데이터 저장 (유효기간 o)
     @Transactional
-    public void valueAdd(String key, Object value, Duration duration)
+    public void addValue(String key, String value, Duration duration)
     {
         ValueOperations<String, Object> ops = redisTemplate.opsForValue();
         ops.set(key, value, duration);
@@ -36,21 +36,21 @@ public class RedisUtil
 
     // 데이터 조회
     @Transactional(readOnly = true)
-    public Object valueGet(String key) {
+    public Object getValue(String key) {
         return redisTemplate.opsForValue().get(key);
     }
 
     // 데이터 삭제
     @Transactional
-    public void valueDelete(String key) {
+    public void deleteValue(String key) {
         redisTemplate.delete(key);
     }
 
-    /// ============ ZSet ============
+    /// ============ ZSet (Sorted Set) ============
 
     // 데이터 저장 (유효기간 x)
     @Transactional
-    public void zsetAdd(String key, Object value, double score)
+    public void addZSet(String key, String value, double score)
     {
         ZSetOperations<String, Object> ops = redisTemplate.opsForZSet();
         ops.add(key, value, score);
@@ -58,7 +58,7 @@ public class RedisUtil
 
     // 데이터 저장 (유효기간 o)
     @Transactional
-    public void zsetAdd(String key, Object value, double score, Duration duration)
+    public void addZSet(String key, String value, double score, Duration duration)
     {
         ZSetOperations<String, Object> ops = redisTemplate.opsForZSet();
         ops.add(key, value, score);
@@ -71,7 +71,7 @@ public class RedisUtil
     // isReverse == false : 낮은 score 조회 (오름차순)
     // {start}번째부터 {end}번째까지 조회합니다. (index는 0부터 시작)
     @Transactional(readOnly = true)
-    public Set<Object> zsetGet(String key, boolean isReverse, int start, int end)
+    public Set<Object> getZSet(String key, boolean isReverse, int start, int end)
     {
         return isReverse ?
                 redisTemplate.opsForZSet().reverseRange(key, start, end) :
@@ -80,20 +80,20 @@ public class RedisUtil
 
     // score 조회
     @Transactional(readOnly = true)
-    public Double zsetGetScore(String key, Object value)
+    public Double getZSetScore(String key, String value)
     {
         return redisTemplate.opsForZSet().score(key, value);
     }
 
     // 데이터 삭제 (key 자체 삭제)
     @Transactional
-    public void zsetDelete(String key) {
+    public void deleteZSet(String key) {
         redisTemplate.opsForZSet().remove(key);
     }
 
     // 데이터 삭제
     @Transactional
-    public void zsetDelete(String key, Object value) {
+    public void deleteZSet(String key, String value) {
         redisTemplate.opsForZSet().remove(key, value);
     }
 }

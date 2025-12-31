@@ -1,8 +1,10 @@
 package yun.pioneer_back.domain.fight.dto.message.details;
 
 import lombok.Builder;
+import lombok.Getter;
 import yun.pioneer_back.domain.fight.dto.message.FightWebSocketMessageDetails;
 
+@Getter
 @Builder
 public class MatchFoundDetails extends FightWebSocketMessageDetails
 {
